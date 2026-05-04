@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /tmp)",
+      "Bash(npx create-next-app@latest moonTool --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-pnpm --no-turbopack)",
+      "Bash(npx create-next-app@latest moon-tool --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-pnpm --no-turbopack)",
+      "Bash(cp *)",
+      "Bash(pnpm install *)",
+      "Bash(where pnpm *)",
+      "Bash(npx pnpm *)",
+      "Bash(npx shadcn@latest *)",
+      "Bash(npm install *)",
+      "Bash(pnpm dlx *)",
+      "Bash(pnpm build *)"
+    ]
+  }
+}
