@@ -13,20 +13,22 @@ interface ToolCardProps {
 export function ToolCard({ tool }: ToolCardProps) {
   return (
     <motion.div
-      whileHover={{ scale: 1.03, y: -4 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       <Link href={`/tools/${tool.id}`}>
-        <Card className="h-full cursor-pointer border transition-shadow hover:shadow-lg">
-          <CardContent className="flex flex-col gap-3 p-6">
-            <span className="text-3xl">{tool.icon}</span>
-            <h3 className="text-lg font-semibold">{tool.name}</h3>
-            <p className="line-clamp-2 text-sm text-muted-foreground">
+        <Card className="group h-full cursor-pointer border border-border/40 bg-card/50 backdrop-blur-sm transition-all hover:border-border hover:bg-card hover:shadow-md">
+          <CardContent className="flex flex-col gap-1.5 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl transition-transform group-hover:scale-110">{tool.icon}</span>
+              <h3 className="text-sm font-semibold leading-tight text-foreground">{tool.name}</h3>
+            </div>
+            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
               {tool.description}
             </p>
-            <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
-              {tool.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
+            <div className="mt-0.5 flex flex-wrap gap-1">
+              {tool.tags.slice(0, 3).map((tag) => (
+                <Badge key={tag} variant="secondary" className="px-1.5 py-0.5 text-[10px] font-medium">
                   {tag}
                 </Badge>
               ))}
