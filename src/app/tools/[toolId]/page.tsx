@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { JsonFormatter } from "@/tools/json-formatter";
 import { Base64Encoder } from "@/tools/base64-encoder";
+import { ColorPalette } from "@/tools/color-palette";
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -49,6 +50,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <JsonFormatter />;
       case "base64-encoder":
         return <Base64Encoder />;
+      case "color-palette":
+        return <ColorPalette />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">
