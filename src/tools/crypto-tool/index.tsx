@@ -182,7 +182,7 @@ export function CryptoTool() {
         <div className="w-full space-y-4">
             <Card className="overflow-hidden border-2 py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">🔐 加密方法</h3>
+                    <h2 className="text-sm font-semibold text-foreground">🔐 加密方法</h2>
                     <p className="text-xs text-muted-foreground">选择加密或哈希算法</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 p-4 md:grid-cols-3 lg:grid-cols-5">
@@ -254,7 +254,7 @@ export function CryptoTool() {
             {isHashMethod && (
                 <Card className="overflow-hidden border-2 border-dashed border-purple-500/30 py-0">
                     <div className="border-b bg-muted/50 px-4 py-2">
-                        <h3 className="text-sm font-semibold text-foreground">🧂 加盐（Salt）</h3>
+                        <h2 className="text-sm font-semibold text-foreground">🧂 加盐（Salt）</h2>
                         <p className="text-xs text-muted-foreground">
                             添加盐值可以防止彩虹表攻击（原文+盐值一起哈希）
                         </p>
@@ -276,7 +276,7 @@ export function CryptoTool() {
             {needsKey && (
                 <Card className="overflow-hidden border-2 border-dashed border-yellow-500/30 py-0">
                     <div className="border-b bg-muted/50 px-4 py-2">
-                        <h3 className="text-sm font-semibold text-foreground">🔑 密钥</h3>
+                        <h2 className="text-sm font-semibold text-foreground">🔑 密钥</h2>
                         <p className="text-xs text-muted-foreground">
                             {mode === "encrypt" ? "设置加密密钥（请妥善保管）" : "输入解密密钥"}
                         </p>
@@ -297,9 +297,9 @@ export function CryptoTool() {
                 <Card className="flex flex-col overflow-hidden border-2 border-dashed border-blue-500/30 bg-card py-0 transition-colors hover:border-blue-500/50">
                     <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
                         <div>
-                            <h3 className="text-sm font-semibold text-foreground">
+                            <h2 className="text-sm font-semibold text-foreground">
                                 📝 {mode === "encrypt" ? "原始文本" : "加密文本"}
-                            </h3>
+                            </h2>
                             <p className="text-xs text-muted-foreground">
                                 {mode === "encrypt" ? "输入需要加密的文本" : "输入需要解密的文本"}
                             </p>
@@ -330,9 +330,9 @@ export function CryptoTool() {
                 <Card className="flex flex-col overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
                     <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
                         <div>
-                            <h3 className="text-sm font-semibold text-foreground">
+                            <h2 className="text-sm font-semibold text-foreground">
                                 ✨ {mode === "encrypt" ? "加密结果" : "解密结果"}
-                            </h3>
+                            </h2>
                             <p className="text-xs text-muted-foreground">
                                 {mode === "encrypt" ? "加密后的密文" : "解密后的原文"}
                             </p>
@@ -395,7 +395,7 @@ export function CryptoTool() {
 
             <Card className="overflow-hidden border py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">💡 使用说明</h3>
+                    <h2 className="text-sm font-semibold text-foreground">💡 使用说明</h2>
                 </div>
                 <div className="space-y-2 p-4 text-xs text-muted-foreground">
                     <p>

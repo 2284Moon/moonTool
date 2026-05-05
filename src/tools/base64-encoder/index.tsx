@@ -169,9 +169,9 @@ export function Base64Encoder() {
                     <Card className="flex flex-col overflow-hidden border-2 border-dashed border-blue-500/30 bg-card py-0 transition-colors hover:border-blue-500/50">
                         <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
                             <div>
-                                <h3 className="text-sm font-semibold text-foreground">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     📝 原始文本
-                                </h3>
+                                </h2>
                                 <p className="text-xs text-muted-foreground">
                                     输入需要编码的文本
                                 </p>
@@ -214,9 +214,9 @@ export function Base64Encoder() {
                     <Card className="flex flex-col overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
                         <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
                             <div>
-                                <h3 className="text-sm font-semibold text-foreground">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     🔐 Base64 编码
-                                </h3>
+                                </h2>
                                 <p className="text-xs text-muted-foreground">
                                     自动编码，也可粘贴解码
                                 </p>
@@ -257,9 +257,9 @@ export function Base64Encoder() {
                     {/* 左侧：文件上传 */}
                     <Card className="flex flex-col overflow-hidden border-2 border-dashed border-purple-500/30 bg-card py-0 transition-colors hover:border-purple-500/50">
                         <div className="border-b bg-muted/50 px-4 py-2">
-                            <h3 className="text-sm font-semibold text-foreground">
+                            <h2 className="text-sm font-semibold text-foreground">
                                 📁 上传文件
-                            </h3>
+                            </h2>
                             <p className="text-xs text-muted-foreground">
                                 选择文件进行 Base64 编码
                             </p>
@@ -298,9 +298,9 @@ export function Base64Encoder() {
                     <Card className="flex flex-col overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
                         <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
                             <div>
-                                <h3 className="text-sm font-semibold text-foreground">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     🔐 Base64 结果
-                                </h3>
+                                </h2>
                                 <p className="text-xs text-muted-foreground">
                                     编码结果，可复制或下载
                                 </p>

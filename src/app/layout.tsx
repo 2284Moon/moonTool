@@ -15,8 +15,53 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "moonTool - 工具网站大全",
-  description: "moonTool 提供各式各样的在线工具，以及精选的网站导航，全部免费使用，无需注册。",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+  ),
+  title: {
+    template: "%s - moonTool",
+    default: "moonTool - 免费在线工具网站大全",
+  },
+  description:
+    "moonTool 提供 JSON 格式化、Base64 编解码、加密解密、调色板、二维码/条形码生成等免费在线工具，以及精选实用网站导航，全部免费使用，无需注册。",
+  keywords: [
+    "在线工具",
+    "JSON格式化",
+    "Base64编解码",
+    "加密解密",
+    "调色板",
+    "二维码生成",
+    "条形码生成",
+    "网站导航",
+    "免费工具",
+  ],
+  authors: [{ name: "moonTool" }],
+  creator: "moonTool",
+  publisher: "moonTool",
+  robots: {
+    index: true,
+    follow: true,
+    "max-image-preview": "large" as const,
+    "max-snippet": -1,
+  },
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    siteName: "moonTool",
+    title: "moonTool - 免费在线工具网站大全",
+    description:
+      "moonTool 提供 JSON 格式化、Base64 编解码、加密解密、调色板、二维码/条形码生成等免费在线工具，以及精选实用网站导航，全部免费使用，无需注册。",
+    url: "/",
+  },
+  twitter: {
+    card: "summary",
+    title: "moonTool - 免费在线工具网站大全",
+    description:
+      "moonTool 提供 JSON 格式化、Base64 编解码、加密解密、调色板、二维码/条形码生成等免费在线工具，以及精选实用网站导航，全部免费使用，无需注册。",
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({

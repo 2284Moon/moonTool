@@ -64,9 +64,9 @@ export function JsonFormatter() {
                 {/* 左侧：输入区域 */}
                 <Card className="flex flex-col overflow-hidden border-2 border-dashed border-primary/30 bg-card py-0 transition-colors hover:border-primary/50">
                     <div className="border-b bg-muted/50 px-4 py-2">
-                        <h3 className="text-sm font-semibold text-foreground">
+                        <h2 className="text-sm font-semibold text-foreground">
                             📝 粘贴 JSON
-                        </h3>
+                        </h2>
                         <p className="text-xs text-muted-foreground">
                             在此粘贴或输入 JSON 字符串
                         </p>
@@ -106,9 +106,9 @@ export function JsonFormatter() {
                 {/* 右侧：格式化输出区域 */}
                 <Card className="flex flex-col overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
                     <div className="border-b bg-muted/50 px-4 py-2">
-                        <h3 className="text-sm font-semibold text-foreground">
+                        <h2 className="text-sm font-semibold text-foreground">
                             ✨ 格式化结果
-                        </h3>
+                        </h2>
                         <p className="text-xs text-muted-foreground">
                             自动格式化，也可手动编辑
                         </p>

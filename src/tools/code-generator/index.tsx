@@ -172,7 +172,7 @@ export function CodeGenerator() {
             {/* 码类型选择 */}
             <Card className="overflow-hidden border-2 py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">📱 码类型</h3>
+                    <h2 className="text-sm font-semibold text-foreground">📱 码类型</h2>
                     <p className="text-xs text-muted-foreground">选择要生成的码类型</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 p-4 md:grid-cols-4 lg:grid-cols-7">
@@ -204,7 +204,7 @@ export function CodeGenerator() {
             {/* 输入区域 */}
             <Card className="overflow-hidden border-2 py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">✏️ 输入内容</h3>
+                    <h2 className="text-sm font-semibold text-foreground">✏️ 输入内容</h2>
                     <p className="text-xs text-muted-foreground">
                         {codeTypes.find((t) => t.value === codeType)?.example && (
                             <>示例：{codeTypes.find((t) => t.value === codeType)?.example}</>
@@ -225,7 +225,7 @@ export function CodeGenerator() {
             {isQRCode && (
                 <Card className="overflow-hidden border-2 py-0">
                     <div className="border-b bg-muted/50 px-4 py-2">
-                        <h3 className="text-sm font-semibold text-foreground">⚙️ 二维码设置</h3>
+                        <h2 className="text-sm font-semibold text-foreground">⚙️ 二维码设置</h2>
                         <p className="text-xs text-muted-foreground">自定义二维码样式</p>
                     </div>
                     <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
@@ -282,7 +282,7 @@ export function CodeGenerator() {
             {/* 预览区域 */}
             <Card className="overflow-hidden border-2 py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">👁️ 预览</h3>
+                    <h2 className="text-sm font-semibold text-foreground">👁️ 预览</h2>
                     <p className="text-xs text-muted-foreground">
                         {isQRCode ? "二维码" : "条形码"}预览
                     </p>
@@ -326,7 +326,7 @@ export function CodeGenerator() {
             {/* 使用说明 */}
             <Card className="overflow-hidden border py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">💡 使用说明</h3>
+                    <h2 className="text-sm font-semibold text-foreground">💡 使用说明</h2>
                 </div>
                 <div className="space-y-2 p-4 text-xs text-muted-foreground">
                     <p>

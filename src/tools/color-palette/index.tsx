@@ -187,7 +187,7 @@ export function ColorPalette() {
                     {/* 左侧：颜色预览 */}
                     <div className="flex flex-col">
                         <div className="border-b bg-muted/50 px-4 py-2">
-                            <h3 className="text-sm font-semibold text-foreground">🎨 当前颜色</h3>
+                            <h2 className="text-sm font-semibold text-foreground">🎨 当前颜色</h2>
                             <p className="text-xs text-muted-foreground">选择或输入颜色值</p>
                         </div>
                         <div className="flex flex-1 items-center justify-center p-8">
@@ -201,7 +201,7 @@ export function ColorPalette() {
                     {/* 右侧：颜色控制 */}
                     <div className="flex flex-col border-l">
                         <div className="border-b bg-muted/50 px-4 py-2">
-                            <h3 className="text-sm font-semibold text-foreground">⚙️ 颜色调整</h3>
+                            <h2 className="text-sm font-semibold text-foreground">⚙️ 颜色调整</h2>
                             <p className="text-xs text-muted-foreground">使用拾色器或输入颜色值</p>
                         </div>
                         <div className="flex flex-1 flex-col gap-4 p-4">
@@ -253,7 +253,7 @@ export function ColorPalette() {
             {/* 颜色值格式 */}
             <Card className="overflow-hidden border-2 py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">📋 颜色值</h3>
+                    <h2 className="text-sm font-semibold text-foreground">📋 颜色值</h2>
                     <p className="text-xs text-muted-foreground">点击复制对应格式</p>
                 </div>
                 <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 lg:grid-cols-4">
@@ -328,7 +328,7 @@ export function ColorPalette() {
             {/* 调色板 */}
             <Card className="overflow-hidden border-2 py-0">
                 <div className="border-b bg-muted/50 px-4 py-2">
-                    <h3 className="text-sm font-semibold text-foreground">🎭 我的调色板</h3>
+                    <h2 className="text-sm font-semibold text-foreground">🎭 我的调色板</h2>
                     <p className="text-xs text-muted-foreground">保存和管理你的配色方案</p>
                 </div>
                 <div className="p-4">
