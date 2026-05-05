@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { JsonFormatter } from "@/tools/json-formatter";
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -41,9 +42,25 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
     notFound();
   }
 
+  const renderToolComponent = () => {
+    switch (toolId) {
+      case "json-formatter":
+        return <JsonFormatter />;
+      default:
+        return (
+          <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">
+            <p className="text-lg">工具功能开发中...</p>
+            <p className="mt-2 text-sm">
+              工具 <strong>{tool.name}</strong> 的具体功能将在后续迭代中实现。
+            </p>
+          </div>
+        );
+    }
+  };
+
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-12">
-      <Breadcrumb className="mb-8">
+    <section className="mx-auto w-full max-w-7xl px-4 py-4">
+      <Breadcrumb className="mb-4">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink render={<Link href="/" />}>
@@ -63,17 +80,7 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex flex-col items-center gap-6 text-center">
-        <span className="text-5xl">{tool.icon}</span>
-        <h1 className="text-3xl font-bold tracking-tight">{tool.name}</h1>
-        <p className="max-w-md text-muted-foreground">{tool.description}</p>
-        <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">
-          <p className="text-lg">工具功能开发中...</p>
-          <p className="mt-2 text-sm">
-            工具 <strong>{tool.name}</strong> 的具体功能将在后续迭代中实现。
-          </p>
-        </div>
-      </div>
+      {renderToolComponent()}
     </section>
   );
 }
