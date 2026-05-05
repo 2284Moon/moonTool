@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { JsonFormatter } from "@/tools/json-formatter";
+import { Base64Encoder } from "@/tools/base64-encoder";
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -46,6 +47,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
     switch (toolId) {
       case "json-formatter":
         return <JsonFormatter />;
+      case "base64-encoder":
+        return <Base64Encoder />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">
