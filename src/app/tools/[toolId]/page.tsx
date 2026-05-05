@@ -13,6 +13,8 @@ import {
 import { JsonFormatter } from "@/tools/json-formatter";
 import { Base64Encoder } from "@/tools/base64-encoder";
 import { ColorPalette } from "@/tools/color-palette";
+import { CryptoTool } from "@/tools/crypto-tool";
+import { CodeGenerator } from "@/tools/code-generator";
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -52,6 +54,10 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <Base64Encoder />;
       case "color-palette":
         return <ColorPalette />;
+      case "crypto-tool":
+        return <CryptoTool />;
+      case "code-generator":
+        return <CodeGenerator />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">

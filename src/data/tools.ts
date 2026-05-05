@@ -25,4 +25,20 @@ export const tools: Tool[] = [
     tags: ["设计", "生成"],
     component: "color-palette",
   },
+  {
+    id: "crypto-tool",
+    name: "加密解密",
+    description: "支持多种加密算法的文本加密解密工具",
+    icon: "🔒",
+    tags: ["加密", "安全", "开发"],
+    component: "crypto-tool",
+  },
+  {
+    id: "code-generator",
+    name: "二维码/条形码",
+    description: "生成二维码和各种格式的条形码",
+    icon: "📱",
+    tags: ["生成", "工具"],
+    component: "code-generator",
+  },
 ];
