@@ -5,6 +5,9 @@ import type { Site } from "@/types";
 
 const EDGE_CONFIG_KEY = "sites";
 const VERCEL_API = "https://api.vercel.com";
+const POST_COOLDOWN_MS = 60_000;
+
+const addTimestamps = new Map<string, number>();
 
 function getEdgeConfigId(): string | undefined {
   return process.env.EDGE_CONFIG_ID || process.env.EDGE_CONFIG?.split("/").pop();
@@ -66,12 +69,28 @@ async function writeSites(sites: Site[]): Promise<boolean> {
   return res.ok;
 }
 
+function getClientIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
 export async function GET() {
   const sites = await readSites();
   return NextResponse.json(sites);
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const lastAdd = addTimestamps.get(ip);
+  const now = Date.now();
+
+  if (lastAdd && now - lastAdd < POST_COOLDOWN_MS) {
+    const remaining = Math.ceil((POST_COOLDOWN_MS - (now - lastAdd)) / 1000);
+    return NextResponse.json(
+      { error: `操作太频繁，请 ${remaining} 秒后再试` },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
   const { name, url, description, icon, tags } = body;
 
@@ -109,5 +128,38 @@ export async function POST(request: Request) {
     );
   }
 
+  addTimestamps.set(ip, now);
   return NextResponse.json(newSite, { status: 201 });
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const deleteKey = request.headers.get("x-delete-key");
+
+  if (!id) {
+    return NextResponse.json({ error: "缺少 id 参数" }, { status: 400 });
+  }
+
+  const expectedKey = process.env.DELETE_SECRET;
+  if (!expectedKey || deleteKey !== expectedKey) {
+    return NextResponse.json({ error: "删除密钥错误" }, { status: 403 });
+  }
+
+  const stored = await readSites();
+  const filtered = stored.filter((s) => s.id !== id);
+
+  if (filtered.length === stored.length) {
+    return NextResponse.json({ error: "未找到该网站" }, { status: 404 });
+  }
+
+  const ok = await writeSites(filtered);
+  if (!ok) {
+    return NextResponse.json(
+      { error: "存储服务未配置" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true });
 }

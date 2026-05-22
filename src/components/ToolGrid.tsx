@@ -12,7 +12,10 @@ export function ToolGrid() {
   const filtered = useMemo(() => {
     if (!query.trim()) return tools;
     return tools.filter(
-      (t) => fuzzyMatch(t.name, query) || fuzzyMatch(t.description, query)
+      (t) =>
+        fuzzyMatch(t.name, query) ||
+        fuzzyMatch(t.description, query) ||
+        t.tags.some((tag) => fuzzyMatch(tag, query))
     );
   }, [query]);
 
@@ -26,8 +29,8 @@ export function ToolGrid() {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {filtered.map((tool) => (
-        <ToolCard key={tool.id} tool={tool} />
+      {filtered.map((tool, i) => (
+        <ToolCard key={tool.id} tool={tool} index={i} />
       ))}
     </div>
   );

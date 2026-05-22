@@ -1,22 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Tool } from "@/types";
 
 interface ToolCardProps {
   tool: Tool;
+  index?: number;
 }
 
-export function ToolCard({ tool }: ToolCardProps) {
+export function ToolCard({ tool, index = 0 }: ToolCardProps) {
   return (
-    <div className="transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+      whileHover={{ y: -6, transition: { type: "spring", stiffness: 500, damping: 30 } }}
+    >
       <Link href={`/tools/${tool.id}`}>
-        <Card className="group h-full cursor-pointer border border-border/40 bg-card/50 backdrop-blur-sm transition-all hover:border-border hover:bg-card hover:shadow-md">
+        <Card className="group h-full cursor-pointer border border-border/40 bg-card/50 backdrop-blur-sm transition-colors hover:border-primary/20 hover:bg-card hover:shadow-md">
           <CardContent className="flex flex-col gap-1.5 p-3">
             <div className="flex items-center gap-2">
-              <span className="text-xl transition-transform group-hover:scale-110">{tool.icon}</span>
+              <motion.span
+                className="text-xl"
+                whileHover={{ rotate: [0, -15, 15, -10, 0] }}
+                transition={{ duration: 0.4 }}
+              >
+                {tool.icon}
+              </motion.span>
               <h3 className="text-sm font-semibold leading-tight text-foreground">{tool.name}</h3>
             </div>
             <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -32,6 +45,6 @@ export function ToolCard({ tool }: ToolCardProps) {
           </CardContent>
         </Card>
       </Link>
-    </div>
+    </motion.div>
   );
 }

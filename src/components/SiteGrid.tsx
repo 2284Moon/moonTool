@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useSearchStore } from "@/store/useSearchStore";
 import { fuzzyMatch } from "@/util/search";
 import { SiteCard } from "./SiteCard";
@@ -12,7 +13,7 @@ export function SiteGrid() {
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchSites = async () => {
+  const fetchSites = useCallback(async () => {
     try {
       const res = await fetch("/api/sites");
       const data = await res.json();
@@ -22,22 +23,31 @@ export function SiteGrid() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSites();
-  }, []);
+  }, [fetchSites]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return sites;
     return sites.filter(
-      (s) => fuzzyMatch(s.name, query) || fuzzyMatch(s.description, query)
+      (s) =>
+        fuzzyMatch(s.name, query) ||
+        fuzzyMatch(s.description, query) ||
+        s.tags.some((tag) => fuzzyMatch(tag, query))
     );
   }, [query, sites]);
 
   if (loading) {
     return (
-      <p className="py-20 text-center text-muted-foreground">加载中...</p>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="py-20 text-center text-muted-foreground"
+      >
+        加载中...
+      </motion.p>
     );
   }
 
@@ -56,8 +66,8 @@ export function SiteGrid() {
         <AddSiteDialog onAdded={fetchSites} />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {filtered.map((site) => (
-          <SiteCard key={site.id} site={site} />
+        {filtered.map((site, i) => (
+          <SiteCard key={site.id} site={site} index={i} onDelete={fetchSites} />
         ))}
       </div>
     </div>

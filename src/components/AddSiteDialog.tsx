@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
+import { useState } from "react";
 
 interface AddSiteDialogProps {
   onAdded: () => void;
@@ -63,7 +63,7 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>
+      <Button className="cursor-pointer" size="sm" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" />
         添加网站
       </Button>

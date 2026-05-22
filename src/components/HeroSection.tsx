@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,18 +24,48 @@ export function HeroSection() {
 
   return (
     <section className="flex flex-1 flex-col items-center justify-center px-4 py-20 text-center">
-      <div className="flex animate-[fadeInUp_0.6s_ease-out] flex-col items-center gap-6">
-        <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
+      <motion.div
+        className="flex flex-col items-center gap-6"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        <motion.h1
+          className="text-5xl font-bold tracking-tight sm:text-6xl drop-shadow-[0_0_12px_oklch(0.708_0_0/0.15)] dark:drop-shadow-[0_0_15px_oklch(0.8_0.1_85/0.3)]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          whileHover={{ scale: 1.02 }}
+        >
           moonTool
-        </h1>
-        <p className="text-xl font-medium text-muted-foreground">
+        </motion.h1>
+        <motion.p
+          className="text-xl font-medium text-muted-foreground"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
           工具网站大全
-        </p>
-        <p className="max-w-lg text-muted-foreground">
+        </motion.p>
+        <motion.p
+          className="max-w-lg text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
           {displayedText}
-          <span className="animate-pulse">|</span>
-        </p>
-        <div className="flex flex-col gap-4 pt-4 sm:flex-row">
+          <motion.span
+            className="inline-block"
+            animate={{ opacity: [1, 0] }}
+            transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
+          >|</motion.span>
+        </motion.p>
+        <motion.div
+          className="flex flex-col gap-4 pt-4 sm:flex-row"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
           <Button
             size="lg"
             className="group text-base"
@@ -56,8 +87,8 @@ export function HeroSection() {
               </Link>
             }
           />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
