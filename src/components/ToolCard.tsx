@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Tool } from "@/types";
@@ -12,10 +11,7 @@ interface ToolCardProps {
 
 export function ToolCard({ tool }: ToolCardProps) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-    >
+    <div className="transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
       <Link href={`/tools/${tool.id}`}>
         <Card className="group h-full cursor-pointer border border-border/40 bg-card/50 backdrop-blur-sm transition-all hover:border-border hover:bg-card hover:shadow-md">
           <CardContent className="flex flex-col gap-1.5 p-3">
@@ -36,6 +32,6 @@ export function ToolCard({ tool }: ToolCardProps) {
           </CardContent>
         </Card>
       </Link>
-    </motion.div>
+    </div>
   );
 }

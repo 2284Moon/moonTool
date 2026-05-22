@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
@@ -12,10 +11,7 @@ interface SiteCardProps {
 
 export function SiteCard({ site }: SiteCardProps) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-    >
+    <div className="transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
       <a
         href={site.url}
         target="_blank"
@@ -47,6 +43,6 @@ export function SiteCard({ site }: SiteCardProps) {
           </CardContent>
         </Card>
       </a>
-    </motion.div>
+    </div>
   );
 }

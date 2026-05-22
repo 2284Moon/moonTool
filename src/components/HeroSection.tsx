@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -24,12 +23,7 @@ export function HeroSection() {
 
   return (
     <section className="flex flex-1 flex-col items-center justify-center px-4 py-20 text-center">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="flex flex-col items-center gap-6"
-      >
+      <div className="flex animate-[fadeInUp_0.6s_ease-out] flex-col items-center gap-6">
         <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
           moonTool
         </h1>
@@ -63,7 +57,7 @@ export function HeroSection() {
             }
           />
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { tools } from "@/data/tools";
@@ -11,11 +12,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { JsonLd } from "@/components/JsonLd";
-import { JsonFormatter } from "@/tools/json-formatter";
-import { Base64Encoder } from "@/tools/base64-encoder";
-import { ColorPalette } from "@/tools/color-palette";
-import { CryptoTool } from "@/tools/crypto-tool";
-import { CodeGenerator } from "@/tools/code-generator";
+
+const JsonFormatter = dynamic(() => import("@/tools/json-formatter").then((m) => m.JsonFormatter));
+const Base64Encoder = dynamic(() => import("@/tools/base64-encoder").then((m) => m.Base64Encoder));
+const ColorPalette = dynamic(() => import("@/tools/color-palette").then((m) => m.ColorPalette));
+const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.CryptoTool));
+const CodeGenerator = dynamic(() => import("@/tools/code-generator").then((m) => m.CodeGenerator));
+const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then((m) => m.RemoveLineBreaks));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -80,6 +83,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <CryptoTool />;
       case "code-generator":
         return <CodeGenerator />;
+      case "remove-line-breaks":
+        return <RemoveLineBreaks />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">
