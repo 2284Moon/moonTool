@@ -50,6 +50,14 @@ export const tools: Tool[] = [
     component: "remove-line-breaks",
   },
   {
+    id: "image-tool",
+    name: "图片处理",
+    description: "纯前端压缩、尺寸调整、锐化增强，保护隐私",
+    icon: "🖼️",
+    tags: ["图片", "压缩", "设计"],
+    component: "image-tool",
+  },
+  {
     id: "cron-tool",
     name: "Cron 表达式",
     description: "可视化生成和解析 Cron 表达式，内置常用预设",

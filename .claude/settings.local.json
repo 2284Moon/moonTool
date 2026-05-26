@@ -13,7 +13,9 @@
       "Bash(pnpm dlx *)",
       "Bash(pnpm build *)",
       "Bash(pnpm dev *)",
-      "Bash(pnpm add *)"
+      "Bash(pnpm add *)",
+      "WebSearch",
+      "Bash(pnpm remove *)"
     ]
   }
 }

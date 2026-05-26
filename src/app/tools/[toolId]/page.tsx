@@ -19,6 +19,7 @@ const ColorPalette = dynamic(() => import("@/tools/color-palette").then((m) => m
 const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.CryptoTool));
 const CodeGenerator = dynamic(() => import("@/tools/code-generator").then((m) => m.CodeGenerator));
 const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then((m) => m.RemoveLineBreaks));
+const ImageTool = dynamic(() => import("@/tools/image-tool").then((m) => m.ImageTool));
 const CronTool = dynamic(() => import("@/tools/cron-tool").then((m) => m.CronTool));
 const RegexTester = dynamic(() => import("@/tools/regex-tester").then((m) => m.RegexTester));
 const DiffChecker = dynamic(() => import("@/tools/diff-checker").then((m) => m.DiffChecker));
@@ -90,6 +91,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <CodeGenerator />;
       case "remove-line-breaks":
         return <RemoveLineBreaks />;
+      case "image-tool":
+        return <ImageTool />;
       case "cron-tool":
         return <CronTool />;
       case "regex-tester":
@@ -158,8 +161,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
           browserRequirements: "Requires JavaScript",
         }}
       />
-      <section className="mx-auto w-full max-w-7xl px-4 py-4">
-        <Breadcrumb className="mb-4">
+      <section className="mx-auto w-full max-w-7xl px-4 py-3">
+        <Breadcrumb className="mb-2">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink render={<Link href="/" />}>
@@ -179,8 +182,10 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-foreground">
-          {tool.name} - 免费在线{tool.name}工具
+        <h1 className="mb-5 text-base font-medium tracking-tight text-foreground">
+          <span className="font-semibold">{tool.name}</span>
+          <span className="mx-2 text-muted-foreground/50">—</span>
+          <span className="text-muted-foreground">{tool.description}</span>
         </h1>
 
         {renderToolComponent()}
