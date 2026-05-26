@@ -22,6 +22,12 @@ const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then
 const ImageTool = dynamic(() => import("@/tools/image-tool").then((m) => m.ImageTool));
 const ExifTool = dynamic(() => import("@/tools/exif-tool").then((m) => m.ExifTool));
 const MarkdownEditor = dynamic(() => import("@/tools/markdown-editor").then((m) => m.MarkdownEditor));
+const UuidGenerator = dynamic(() => import("@/tools/uuid-generator").then((m) => m.UuidGenerator));
+const CurlConverter = dynamic(() => import("@/tools/curl-converter").then((m) => m.CurlConverter));
+const HashCalculator = dynamic(() => import("@/tools/hash-calculator").then((m) => m.HashCalculator));
+const CssGradient = dynamic(() => import("@/tools/css-gradient").then((m) => m.CssGradient));
+const SvgCompressor = dynamic(() => import("@/tools/svg-compressor").then((m) => m.SvgCompressor));
+const LoremIpsum = dynamic(() => import("@/tools/lorem-ipsum").then((m) => m.LoremIpsum));
 const CronTool = dynamic(() => import("@/tools/cron-tool").then((m) => m.CronTool));
 const RegexTester = dynamic(() => import("@/tools/regex-tester").then((m) => m.RegexTester));
 const DiffChecker = dynamic(() => import("@/tools/diff-checker").then((m) => m.DiffChecker));
@@ -99,6 +105,18 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <ExifTool />;
       case "markdown-editor":
         return <MarkdownEditor />;
+      case "uuid-generator":
+        return <UuidGenerator />;
+      case "curl-converter":
+        return <CurlConverter />;
+      case "hash-calculator":
+        return <HashCalculator />;
+      case "css-gradient":
+        return <CssGradient />;
+      case "svg-compressor":
+        return <SvgCompressor />;
+      case "lorem-ipsum":
+        return <LoremIpsum />;
       case "cron-tool":
         return <CronTool />;
       case "regex-tester":
