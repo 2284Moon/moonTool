@@ -11,8 +11,8 @@ export const tools: Tool[] = [
   },
   {
     id: "base64-encoder",
-    name: "Base64 编解码",
-    description: "Base64 编码与解码工具",
+    name: "编码解码",
+    description: "支持 Base64、URL、URL 参数等多种编解码",
     icon: "🔐",
     tags: ["转换", "开发"],
     component: "base64-encoder",
@@ -48,5 +48,13 @@ export const tools: Tool[] = [
     icon: "📝",
     tags: ["文本", "转换"],
     component: "remove-line-breaks",
+  },
+  {
+    id: "jwt-decoder",
+    name: "JWT 解析",
+    description: "纯前端解码 JSON Web Token，查看 Header 和 Payload",
+    icon: "🔐",
+    tags: ["解码", "安全", "开发"],
+    component: "jwt-decoder",
   },
 ];

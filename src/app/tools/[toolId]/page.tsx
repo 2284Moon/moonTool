@@ -14,11 +14,12 @@ import {
 import { JsonLd } from "@/components/JsonLd";
 
 const JsonFormatter = dynamic(() => import("@/tools/json-formatter").then((m) => m.JsonFormatter));
-const Base64Encoder = dynamic(() => import("@/tools/base64-encoder").then((m) => m.Base64Encoder));
+const Base64Encoder = dynamic(() => import("@/tools/base64-encoder").then((m) => m.EncodingTools));
 const ColorPalette = dynamic(() => import("@/tools/color-palette").then((m) => m.ColorPalette));
 const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.CryptoTool));
 const CodeGenerator = dynamic(() => import("@/tools/code-generator").then((m) => m.CodeGenerator));
 const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then((m) => m.RemoveLineBreaks));
+const JwtDecoder = dynamic(() => import("@/tools/jwt-decoder").then((m) => m.JwtDecoder));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -85,6 +86,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <CodeGenerator />;
       case "remove-line-breaks":
         return <RemoveLineBreaks />;
+      case "jwt-decoder":
+        return <JwtDecoder />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">
