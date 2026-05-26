@@ -205,16 +205,16 @@ export function TimestampConverter() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg border bg-muted/20 p-3">
             <div className={labelClass}>本地时间</div>
-            <div className={valueClass}>{now.toLocaleString("zh-CN", { hour12: false })}</div>
+            <div className={valueClass} suppressHydrationWarning>{now.toLocaleString("zh-CN", { hour12: false })}</div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-3">
             <div className={labelClass}>UTC 时间</div>
-            <div className={valueClass}>{now.toISOString().slice(0, 19).replace("T", " ")} UTC</div>
+            <div className={valueClass} suppressHydrationWarning>{now.toISOString().slice(0, 19).replace("T", " ")} UTC</div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-3">
             <div className={labelClass}>Unix 秒</div>
             <div className="flex items-center gap-2">
-              <span className={valueClass}>{unixNow}</span>
+              <span className={valueClass} suppressHydrationWarning>{unixNow}</span>
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopy(String(unixNow))}>
                 <Copy className="h-3 w-3" />
               </Button>
@@ -223,7 +223,7 @@ export function TimestampConverter() {
           <div className="rounded-lg border bg-muted/20 p-3">
             <div className={labelClass}>Unix 毫秒</div>
             <div className="flex items-center gap-2">
-              <span className={valueClass}>{now.getTime()}</span>
+              <span className={valueClass} suppressHydrationWarning>{now.getTime()}</span>
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCopy(String(now.getTime()))}>
                 <Copy className="h-3 w-3" />
               </Button>
@@ -231,7 +231,7 @@ export function TimestampConverter() {
           </div>
           <div className="rounded-lg border bg-muted/20 p-3 sm:col-span-2">
             <div className={labelClass}>ISO 8601</div>
-            <div className={valueClass}>{now.toISOString()}</div>
+            <div className={valueClass} suppressHydrationWarning>{now.toISOString()}</div>
           </div>
         </div>
       </Card>
@@ -375,7 +375,7 @@ export function TimestampConverter() {
                   <tr key={tz} className="border-t transition-colors hover:bg-muted/20">
                     <td className="px-4 py-2.5 font-medium">{name}</td>
                     <td className="px-4 py-2.5 font-mono text-muted-foreground">{offset}</td>
-                    <td className="px-4 py-2.5 font-mono">{fmtTz(now, tz)}</td>
+                    <td className="px-4 py-2.5 font-mono" suppressHydrationWarning>{fmtTz(now, tz)}</td>
                   </tr>
                 );
               })}

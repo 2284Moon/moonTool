@@ -50,6 +50,14 @@ export const tools: Tool[] = [
     component: "remove-line-breaks",
   },
   {
+    id: "diff-checker",
+    name: "文本差异对比",
+    description: "纯前端比对两端文本，高亮新增、删除和修改的部分",
+    icon: "📊",
+    tags: ["文本", "对比", "开发"],
+    component: "diff-checker",
+  },
+  {
     id: "timestamp-converter",
     name: "时间戳转换",
     description: "Unix 时间戳与日期双向转换，实时时钟，时区速查",
