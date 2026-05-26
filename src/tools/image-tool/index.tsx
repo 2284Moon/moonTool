@@ -281,6 +281,7 @@ const FORMATS = [
   { value: "image/webp", label: "WebP", ext: ".webp" },
   { value: "image/png", label: "PNG", ext: ".png" },
 ] as const;
+type OutputFormat = (typeof FORMATS)[number];
 
 // ====== 锐化卷积核 ======
 function applySharpen(
@@ -375,7 +376,7 @@ export function ImageTool() {
   const [targetW, setTargetW] = useState(0);
   const [targetH, setTargetH] = useState(0);
   const [lockAspect, setLockAspect] = useState(true);
-  const [format, setFormat] = useState(FORMATS[0]);
+  const [format, setFormat] = useState<OutputFormat>(FORMATS[0]);
   const [sharpen, setSharpen] = useState(0);
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(0);
@@ -529,7 +530,7 @@ export function ImageTool() {
     setEnhanceProgress(0);
     setEnhancedUrl("");
     try {
-      const result = await upscaler.upscale(editSource, {
+      const result = await (upscaler as unknown as { upscale: (input: HTMLCanvasElement, options: Record<string, unknown>) => Promise<unknown> }).upscale(editSource, {
         output: "canvas",
         patchSize: 64,
         padding: 6,

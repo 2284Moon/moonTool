@@ -58,6 +58,22 @@ export const tools: Tool[] = [
     component: "image-tool",
   },
   {
+    id: "exif-tool",
+    name: "EXIF 隐私工具",
+    description: "读取照片设备、时间和 GPS 信息，并一键清除 EXIF 隐私数据",
+    icon: "🛡️",
+    tags: ["图片", "隐私", "安全"],
+    component: "exif-tool",
+  },
+  {
+    id: "markdown-editor",
+    name: "Markdown 编辑器",
+    description: "左侧编辑 Markdown，右侧实时预览，支持自动保存和导出",
+    icon: "📄",
+    tags: ["文本", "编辑", "导出"],
+    component: "markdown-editor",
+  },
+  {
     id: "cron-tool",
     name: "Cron 表达式",
     description: "可视化生成和解析 Cron 表达式，内置常用预设",

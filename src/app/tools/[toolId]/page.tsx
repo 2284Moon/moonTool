@@ -20,6 +20,8 @@ const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.Cry
 const CodeGenerator = dynamic(() => import("@/tools/code-generator").then((m) => m.CodeGenerator));
 const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then((m) => m.RemoveLineBreaks));
 const ImageTool = dynamic(() => import("@/tools/image-tool").then((m) => m.ImageTool));
+const ExifTool = dynamic(() => import("@/tools/exif-tool").then((m) => m.ExifTool));
+const MarkdownEditor = dynamic(() => import("@/tools/markdown-editor").then((m) => m.MarkdownEditor));
 const CronTool = dynamic(() => import("@/tools/cron-tool").then((m) => m.CronTool));
 const RegexTester = dynamic(() => import("@/tools/regex-tester").then((m) => m.RegexTester));
 const DiffChecker = dynamic(() => import("@/tools/diff-checker").then((m) => m.DiffChecker));
@@ -93,6 +95,10 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <RemoveLineBreaks />;
       case "image-tool":
         return <ImageTool />;
+      case "exif-tool":
+        return <ExifTool />;
+      case "markdown-editor":
+        return <MarkdownEditor />;
       case "cron-tool":
         return <CronTool />;
       case "regex-tester":

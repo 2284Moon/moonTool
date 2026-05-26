@@ -4,7 +4,23 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Plus, Trash2, Shuffle } from "lucide-react";
+import { Copy, Plus, Trash2, Shuffle, Pipette } from "lucide-react";
+
+interface EyeDropperResult {
+    sRGBHex: string;
+}
+
+interface EyeDropperConstructor {
+    new(): {
+        open: () => Promise<EyeDropperResult>;
+    };
+}
+
+declare global {
+    interface Window {
+        EyeDropper?: EyeDropperConstructor;
+    }
+}
 
 interface Color {
     id: string;
@@ -16,6 +32,7 @@ interface Color {
 export function ColorPalette() {
     const [currentColor, setCurrentColor] = useState("#3b82f6");
     const [palette, setPalette] = useState<Color[]>([]);
+    const [pickerMessage, setPickerMessage] = useState("");
 
     // 将HEX转换为RGB
     const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
@@ -125,6 +142,22 @@ export function ColorPalette() {
         setCurrentColor(randomHex);
     };
 
+    const pickFromScreen = async () => {
+        if (!window.EyeDropper) {
+            setPickerMessage("当前浏览器暂不支持屏幕吸色，请使用系统颜色选择器。");
+            return;
+        }
+
+        try {
+            setPickerMessage("正在吸取屏幕颜色...");
+            const result = await new window.EyeDropper().open();
+            setCurrentColor(result.sRGBHex);
+            setPickerMessage(`已吸取 ${result.sRGBHex.toUpperCase()}`);
+        } catch {
+            setPickerMessage("已取消吸色。");
+        }
+    };
+
     // 生成互补色
     const generateComplementary = () => {
         const rgb = hexToRgb(currentColor);
@@ -222,7 +255,13 @@ export function ColorPalette() {
                                 <Button size="sm" variant="outline" onClick={generateRandomColor}>
                                     <Shuffle className="h-4 w-4" />
                                 </Button>
+                                <Button size="sm" variant="outline" onClick={pickFromScreen}>
+                                    <Pipette className="h-4 w-4" />
+                                </Button>
                             </div>
+                            {pickerMessage && (
+                                <p className="text-xs text-muted-foreground">{pickerMessage}</p>
+                            )}
 
                             {/* 快速配色方案 */}
                             <div className="space-y-2">
