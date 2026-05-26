@@ -50,6 +50,14 @@ export const tools: Tool[] = [
     component: "remove-line-breaks",
   },
   {
+    id: "cron-tool",
+    name: "Cron 表达式",
+    description: "可视化生成和解析 Cron 表达式，内置常用预设",
+    icon: "⏰",
+    tags: ["定时", "调度", "开发"],
+    component: "cron-tool",
+  },
+  {
     id: "regex-tester",
     name: "正则测试",
     description: "实时正则匹配与高亮，内置身份证、手机号等常用模板",
