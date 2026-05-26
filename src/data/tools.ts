@@ -50,6 +50,14 @@ export const tools: Tool[] = [
     component: "remove-line-breaks",
   },
   {
+    id: "regex-tester",
+    name: "正则测试",
+    description: "实时正则匹配与高亮，内置身份证、手机号等常用模板",
+    icon: "🔍",
+    tags: ["正则", "匹配", "开发"],
+    component: "regex-tester",
+  },
+  {
     id: "diff-checker",
     name: "文本差异对比",
     description: "纯前端比对两端文本，高亮新增、删除和修改的部分",

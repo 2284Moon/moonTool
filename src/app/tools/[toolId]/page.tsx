@@ -19,6 +19,7 @@ const ColorPalette = dynamic(() => import("@/tools/color-palette").then((m) => m
 const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.CryptoTool));
 const CodeGenerator = dynamic(() => import("@/tools/code-generator").then((m) => m.CodeGenerator));
 const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then((m) => m.RemoveLineBreaks));
+const RegexTester = dynamic(() => import("@/tools/regex-tester").then((m) => m.RegexTester));
 const DiffChecker = dynamic(() => import("@/tools/diff-checker").then((m) => m.DiffChecker));
 const TimestampConverter = dynamic(() => import("@/tools/timestamp-converter").then((m) => m.TimestampConverter));
 const JwtDecoder = dynamic(() => import("@/tools/jwt-decoder").then((m) => m.JwtDecoder));
@@ -88,6 +89,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <CodeGenerator />;
       case "remove-line-breaks":
         return <RemoveLineBreaks />;
+      case "regex-tester":
+        return <RegexTester />;
       case "diff-checker":
         return <DiffChecker />;
       case "timestamp-converter":
