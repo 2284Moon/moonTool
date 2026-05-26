@@ -50,6 +50,14 @@ export const tools: Tool[] = [
     component: "remove-line-breaks",
   },
   {
+    id: "timestamp-converter",
+    name: "时间戳转换",
+    description: "Unix 时间戳与日期双向转换，实时时钟，时区速查",
+    icon: "⏱️",
+    tags: ["时间", "转换", "开发"],
+    component: "timestamp-converter",
+  },
+  {
     id: "jwt-decoder",
     name: "JWT 解析",
     description: "纯前端解码 JSON Web Token，查看 Header 和 Payload",

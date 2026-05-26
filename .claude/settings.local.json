@@ -12,7 +12,8 @@
       "Bash(npm install *)",
       "Bash(pnpm dlx *)",
       "Bash(pnpm build *)",
-      "Bash(pnpm dev *)"
+      "Bash(pnpm dev *)",
+      "Bash(pnpm add *)"
     ]
   }
 }

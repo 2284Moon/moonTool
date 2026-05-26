@@ -19,6 +19,7 @@ const ColorPalette = dynamic(() => import("@/tools/color-palette").then((m) => m
 const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.CryptoTool));
 const CodeGenerator = dynamic(() => import("@/tools/code-generator").then((m) => m.CodeGenerator));
 const RemoveLineBreaks = dynamic(() => import("@/tools/remove-line-breaks").then((m) => m.RemoveLineBreaks));
+const TimestampConverter = dynamic(() => import("@/tools/timestamp-converter").then((m) => m.TimestampConverter));
 const JwtDecoder = dynamic(() => import("@/tools/jwt-decoder").then((m) => m.JwtDecoder));
 
 interface ToolDetailPageProps {
@@ -86,6 +87,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <CodeGenerator />;
       case "remove-line-breaks":
         return <RemoveLineBreaks />;
+      case "timestamp-converter":
+        return <TimestampConverter />;
       case "jwt-decoder":
         return <JwtDecoder />;
       default:
