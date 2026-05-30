@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Copy, FileUp, Hash } from "lucide-react";
@@ -24,6 +24,8 @@ const wordArrayFromBuffer = (buffer: ArrayBuffer) => {
 export function HashCalculator() {
   const [text, setText] = useState("moonTool");
   const [fileName, setFileName] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<HashResult>(emptyResult);
   const [progress, setProgress] = useState("");
 
@@ -85,14 +87,46 @@ export function HashCalculator() {
           </div>
         </Card>
 
-        <Card className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-blue-500/30 p-8">
-          <FileUp className="h-10 w-10 text-muted-foreground/50" />
-          <div className="text-center">
-            <p className="text-sm font-medium">选择文件计算指纹</p>
-            <p className="text-xs text-muted-foreground">大文件按 4MB 切片读取，不上传文件</p>
+        <Card
+          className={`flex flex-col items-center justify-center gap-4 border-2 border-dashed p-8 cursor-pointer transition-all ${
+            isDragging
+              ? "border-primary bg-primary/5 scale-[1.02]"
+              : "border-blue-500/30 hover:border-blue-500/60 hover:bg-muted/30"
+          }`}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) hashFile(file);
+          }}
+        >
+          <div className={`rounded-full p-4 ${isDragging ? "bg-primary/10" : "bg-muted/50"}`}>
+            <FileUp className={`h-8 w-8 ${isDragging ? "text-primary" : "text-muted-foreground/60"}`} />
           </div>
-          <input type="file" onChange={(e) => e.target.files?.[0] && hashFile(e.target.files[0])} className="text-sm" />
-          {fileName && <p className="max-w-full truncate text-xs text-muted-foreground">{fileName}</p>}
+          <div className="text-center space-y-1">
+            <p className="text-sm font-medium">
+              {isDragging ? "松开即可上传" : "点击选择文件 或 拖拽文件到此处"}
+            </p>
+            <p className="text-xs text-muted-foreground">大文件按 4MB 切片读取，纯前端计算，不上传</p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={(e) => e.target.files?.[0] && hashFile(e.target.files[0])}
+            className="hidden"
+          />
+          {fileName && (
+            <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+              <Hash className="h-4 w-4 text-muted-foreground" />
+              <span className="max-w-[200px] truncate text-xs font-medium">{fileName}</span>
+            </div>
+          )}
         </Card>
       </div>
 

@@ -19,10 +19,23 @@ async function readSites(): Promise<Site[]> {
 
   const edgeConfig = createClient(connectionString);
   const stored = await edgeConfig.get<Site[]>(EDGE_CONFIG_KEY);
-  if (stored && stored.length > 0) return stored;
 
-  await seedDefaultSites();
-  return defaultSites;
+  // 没有存储过，写入默认数据
+  if (!stored || stored.length === 0) {
+    await seedDefaultSites();
+    return defaultSites;
+  }
+
+  // 检查本地新增的站点，自动合并
+  const storedIds = new Set(stored.map((s) => s.id));
+  const newSites = defaultSites.filter((s) => !storedIds.has(s.id));
+  if (newSites.length > 0) {
+    const merged = [...stored, ...newSites];
+    await writeSites(merged);
+    return merged;
+  }
+
+  return stored;
 }
 
 async function seedDefaultSites() {

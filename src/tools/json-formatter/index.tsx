@@ -1,45 +1,60 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
+
+type Mode = "formatted" | "compressed";
 
 export function JsonFormatter() {
     const [input, setInput] = useState("");
-    const [output, setOutput] = useState("");
+    const [mode, setMode] = useState<Mode>("formatted");
     const [error, setError] = useState("");
     const inputScrollRef = useRef<HTMLDivElement>(null);
     const outputScrollRef = useRef<HTMLDivElement>(null);
+
+    // 解析后的 JSON 对象
+    const [parsed, setParsed] = useState<unknown>(null);
+
+    // 根据模式计算输出内容
+    const output = useMemo(() => {
+        if (parsed === null) return "";
+        return mode === "formatted"
+            ? JSON.stringify(parsed, null, 2)
+            : JSON.stringify(parsed);
+    }, [parsed, mode]);
 
     const inputLines = input.split("\n").length;
     const outputLines = output.split("\n").length;
 
     useEffect(() => {
         if (!input.trim()) {
-            setOutput("");
+            setParsed(null);
             setError("");
             return;
         }
 
         try {
-            const parsed = JSON.parse(input);
-            setOutput(JSON.stringify(parsed, null, 2));
+            const result = JSON.parse(input);
+            setParsed(result);
             setError("");
         } catch (e) {
+            setParsed(null);
             setError((e as Error).message);
         }
     }, [input]);
 
     const handleOutputChange = (value: string) => {
-        setOutput(value);
         if (!value.trim()) {
             setInput("");
+            setParsed(null);
             setError("");
             return;
         }
 
         try {
-            const parsed = JSON.parse(value);
-            setInput(JSON.stringify(parsed));
+            const result = JSON.parse(value);
+            setParsed(result);
+            setInput(JSON.stringify(result));
             setError("");
         } catch (e) {
             setError((e as Error).message);
@@ -62,7 +77,7 @@ export function JsonFormatter() {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {/* 左侧：输入区域 */}
-                <Card className="flex flex-col overflow-hidden border-2 border-dashed border-primary/30 bg-card py-0 transition-colors hover:border-primary/50">
+                <Card className="flex flex-col min-h-[500px] overflow-hidden border-2 border-dashed border-primary/30 bg-card py-0 transition-colors hover:border-primary/50">
                     <div className="border-b bg-muted/50 px-4 py-2">
                         <h2 className="text-sm font-semibold text-foreground">
                             📝 粘贴 JSON
@@ -71,12 +86,11 @@ export function JsonFormatter() {
                             在此粘贴或输入 JSON 字符串
                         </p>
                     </div>
-                    <div className="relative flex flex-1 overflow-hidden">
+                    <div className="relative flex flex-1 min-h-0 overflow-hidden">
                         {/* 行号 */}
                         <div
                             ref={inputScrollRef}
-                            className="select-none overflow-hidden border-r bg-muted/30 py-3 text-right"
-                            onScroll={(e) => syncScroll(e.currentTarget, outputScrollRef)}
+                            className="select-none overflow-hidden border-r bg-muted/30 py-3 text-right shrink-0"
                         >
                             {Array.from({ length: Math.max(inputLines, 1) }, (_, i) => (
                                 <div
@@ -97,28 +111,52 @@ export function JsonFormatter() {
                                 }
                             }}
                             placeholder='{"name": "moonTool", "type": "formatter"}'
-                            className="h-[500px] flex-1 resize-none bg-transparent px-3 py-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                            className="h-full flex-1 resize-none overflow-auto bg-transparent px-3 py-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
                             spellCheck={false}
                         />
                     </div>
                 </Card>
 
-                {/* 右侧：格式化输出区域 */}
-                <Card className="flex flex-col overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
-                    <div className="border-b bg-muted/50 px-4 py-2">
-                        <h2 className="text-sm font-semibold text-foreground">
-                            ✨ 格式化结果
-                        </h2>
-                        <p className="text-xs text-muted-foreground">
-                            自动格式化，也可手动编辑
-                        </p>
+                {/* 右侧：输出区域 */}
+                <Card className="flex flex-col min-h-[500px] overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
+                    <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
+                        <div>
+                            <h2 className="text-sm font-semibold text-foreground">
+                                ✨ 输出结果
+                            </h2>
+                            <p className="text-xs text-muted-foreground">
+                                可手动编辑，自动同步到左侧
+                            </p>
+                        </div>
+                        {/* 模式切换 */}
+                        <div className="flex rounded-md border bg-background">
+                            <button
+                                onClick={() => setMode("formatted")}
+                                className={`px-3 py-1 text-xs font-medium transition-colors ${
+                                    mode === "formatted"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                格式化
+                            </button>
+                            <button
+                                onClick={() => setMode("compressed")}
+                                className={`px-3 py-1 text-xs font-medium transition-colors ${
+                                    mode === "compressed"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                压缩
+                            </button>
+                        </div>
                     </div>
-                    <div className="relative flex flex-1 overflow-hidden">
+                    <div className="relative flex flex-1 min-h-0 overflow-hidden">
                         {/* 行号 */}
                         <div
                             ref={outputScrollRef}
-                            className="select-none overflow-hidden border-r bg-muted/30 py-3 text-right"
-                            onScroll={(e) => syncScroll(e.currentTarget, inputScrollRef)}
+                            className="select-none overflow-hidden border-r bg-muted/30 py-3 text-right shrink-0"
                         >
                             {Array.from({ length: Math.max(outputLines, 1) }, (_, i) => (
                                 <div
@@ -138,8 +176,8 @@ export function JsonFormatter() {
                                     outputScrollRef.current.scrollTop = e.currentTarget.scrollTop;
                                 }
                             }}
-                            placeholder="格式化后的 JSON 将显示在这里..."
-                            className="h-[500px] flex-1 resize-none bg-transparent px-3 py-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                            placeholder="输出结果将显示在这里..."
+                            className="h-full flex-1 resize-none overflow-auto bg-transparent px-3 py-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
                             spellCheck={false}
                         />
                     </div>

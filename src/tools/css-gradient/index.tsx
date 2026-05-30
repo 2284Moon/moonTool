@@ -80,11 +80,11 @@ export function CssGradient() {
             <Button size="sm" variant="outline" onClick={addStop}><Plus className="mr-1 h-3.5 w-3.5" /> 添加</Button>
           </div>
           {stops.map((stop) => (
-            <div key={stop.id} className="grid grid-cols-[44px_1fr_64px_32px] items-center gap-2">
-              <input type="color" value={stop.color} onChange={(e) => update(stop.id, { color: e.target.value })} className="h-9 w-11 rounded border" />
-              <input value={stop.color} onChange={(e) => update(stop.id, { color: e.target.value })} className="h-9 rounded-md border bg-background px-2 font-mono text-sm outline-none" />
-              <input type="number" min={0} max={100} value={stop.pos} onChange={(e) => update(stop.id, { pos: Number(e.target.value) })} className="h-9 rounded-md border bg-background px-2 text-sm outline-none" />
-              <Button size="sm" variant="ghost" className="h-9 w-9 p-0" onClick={() => removeStop(stop.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+            <div key={stop.id} className="flex items-center gap-2">
+              <input type="color" value={stop.color} onChange={(e) => update(stop.id, { color: e.target.value })} className="h-9 w-10 shrink-0 rounded border cursor-pointer" />
+              <input value={stop.color} onChange={(e) => update(stop.id, { color: e.target.value })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 font-mono text-sm outline-none" />
+              <input type="number" min={0} max={100} value={stop.pos} onChange={(e) => update(stop.id, { pos: Number(e.target.value) })} className="h-9 w-16 shrink-0 rounded-md border bg-background px-2 text-sm outline-none" />
+              <Button size="sm" variant="ghost" className="h-9 w-9 shrink-0 p-0" onClick={() => removeStop(stop.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
             </div>
           ))}
         </Card>

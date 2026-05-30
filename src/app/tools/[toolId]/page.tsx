@@ -33,6 +33,7 @@ const RegexTester = dynamic(() => import("@/tools/regex-tester").then((m) => m.R
 const DiffChecker = dynamic(() => import("@/tools/diff-checker").then((m) => m.DiffChecker));
 const TimestampConverter = dynamic(() => import("@/tools/timestamp-converter").then((m) => m.TimestampConverter));
 const JwtDecoder = dynamic(() => import("@/tools/jwt-decoder").then((m) => m.JwtDecoder));
+const ApiHealthChecker = dynamic(() => import("@/tools/api-health-checker").then((m) => m.ApiHealthChecker));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -127,6 +128,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <TimestampConverter />;
       case "jwt-decoder":
         return <JwtDecoder />;
+      case "api-health-checker":
+        return <ApiHealthChecker />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">

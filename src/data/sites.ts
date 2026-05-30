@@ -74,6 +74,14 @@ export const sites: Site[] = [
     tags: ["开发", "开源"],
   },
   {
+    id: "gitee",
+    name: "Gitee",
+    description: "国内领先的代码托管与协作平台，提供代码托管、CI/CD、项目管理等服务",
+    url: "https://gitee.com",
+    icon: "🐙",
+    tags: ["开发", "开源"],
+  },
+  {
     id: "google-translate",
     name: "谷歌翻译",
     description: "Google 提供的在线翻译服务，支持上百种语言的互译",

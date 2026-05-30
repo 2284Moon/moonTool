@@ -161,4 +161,12 @@ export const tools: Tool[] = [
     tags: ["解码", "安全", "开发"],
     component: "jwt-decoder",
   },
+  {
+    id: "api-health-checker",
+    name: "API 健康检测",
+    description: "检测 API 可用性，可视化健康状态，支持定时监控",
+    icon: "💚",
+    tags: ["监控", "网络", "开发"],
+    component: "api-health-checker",
+  },
 ];

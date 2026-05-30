@@ -1,0 +1,671 @@
+"use client";
+
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  CheckCircle2,
+  ClipboardPaste,
+  Gauge,
+  Play,
+  RotateCcw,
+  Square,
+  XCircle,
+} from "lucide-react";
+
+interface HealthRecord {
+  timestamp: number;
+  status: "success" | "error";
+  latency: number;
+  error?: string;
+  response?: string;
+  statusCode?: number;
+}
+
+type ApiFormat = "openai" | "anthropic" | "gemini";
+type AuthStyle = "bearer" | "api-key" | "x-api-key" | "x-goog-api-key";
+
+interface ProviderPreset {
+  id: string;
+  name: string;
+  aliases: string[];
+  format: ApiFormat;
+  url: string;
+  model: string;
+  authStyle: AuthStyle;
+}
+
+const DEFAULT_PROMPT = "我要去洗车，是走路去还是开车去？简单回答，给出10个字以内的理由";
+
+const PROVIDERS: ProviderPreset[] = [
+  {
+    id: "openai",
+    name: "ChatGPT / OpenAI",
+    aliases: ["openai", "chatgpt", "gpt"],
+    format: "openai",
+    url: "https://api.openai.com/v1/chat/completions",
+    model: "gpt-4.1-mini",
+    authStyle: "bearer",
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic Claude",
+    aliases: ["anthropic", "claude"],
+    format: "anthropic",
+    url: "https://api.anthropic.com/v1/messages",
+    model: "claude-sonnet-4-5",
+    authStyle: "x-api-key",
+  },
+  {
+    id: "gemini",
+    name: "Gemini",
+    aliases: ["gemini", "google", "generativelanguage", "AIza"],
+    format: "gemini",
+    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    model: "gemini-2.5-flash",
+    authStyle: "x-goog-api-key",
+  },
+  {
+    id: "grok",
+    name: "Grok / xAI",
+    aliases: ["grok", "xai", "x.ai", "api.x.ai"],
+    format: "openai",
+    url: "https://api.x.ai/v1/chat/completions",
+    model: "grok-4.3",
+    authStyle: "bearer",
+  },
+  {
+    id: "qwen",
+    name: "Qwen / 通义千问",
+    aliases: ["qwen", "dashscope", "aliyun", "阿里", "通义", "千问"],
+    format: "openai",
+    url: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    model: "qwen3.6-plus",
+    authStyle: "bearer",
+  },
+  {
+    id: "deepseek",
+    name: "DeepSeek",
+    aliases: ["deepseek"],
+    format: "openai",
+    url: "https://api.deepseek.com/chat/completions",
+    model: "deepseek-v4-flash",
+    authStyle: "bearer",
+  },
+  {
+    id: "deepseek-anthropic",
+    name: "DeepSeek Anthropic",
+    aliases: ["deepseek", "anthropic"],
+    format: "anthropic",
+    url: "https://api.deepseek.com/anthropic/v1/messages",
+    model: "deepseek-v4-flash",
+    authStyle: "x-api-key",
+  },
+  {
+    id: "kimi",
+    name: "Kimi / 月之暗面",
+    aliases: ["kimi", "moonshot", "月之暗面"],
+    format: "openai",
+    url: "https://api.moonshot.ai/v1/chat/completions",
+    model: "moonshot-v1-8k",
+    authStyle: "bearer",
+  },
+  {
+    id: "glm",
+    name: "GLM / 智谱",
+    aliases: ["glm", "zhipu", "bigmodel", "智谱"],
+    format: "openai",
+    url: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    model: "glm-5.1",
+    authStyle: "bearer",
+  },
+  {
+    id: "mimo-openai",
+    name: "小米 MiMo OpenAI",
+    aliases: ["mimo", "xiaomi", "xiaomimimo", "小米"],
+    format: "openai",
+    url: "https://api.xiaomimimo.com/v1/chat/completions",
+    model: "mimo-v2.5-pro",
+    authStyle: "api-key",
+  },
+  {
+    id: "mimo-anthropic",
+    name: "小米 MiMo Anthropic",
+    aliases: ["mimo", "xiaomi", "xiaomimimo", "小米", "anthropic"],
+    format: "anthropic",
+    url: "https://api.xiaomimimo.com/anthropic/v1/messages",
+    model: "mimo-v2.5-pro",
+    authStyle: "api-key",
+  },
+];
+
+const FORMAT_LABEL: Record<ApiFormat, string> = {
+  openai: "OpenAI 兼容",
+  anthropic: "Anthropic",
+  gemini: "Gemini",
+};
+
+const AUTH_LABEL: Record<AuthStyle, string> = {
+  bearer: "Authorization: Bearer",
+  "api-key": "api-key",
+  "x-api-key": "x-api-key",
+  "x-goog-api-key": "x-goog-api-key",
+};
+
+function stripQuotes(value: string) {
+  return value.trim().replace(/^["'`]+|["'`,]+$/g, "");
+}
+
+function normalizeUrl(inputUrl: string, format: ApiFormat, model: string) {
+  const raw = stripQuotes(inputUrl);
+  if (!raw) return raw;
+  if (format === "gemini") {
+    if (raw.includes(":generateContent")) return raw;
+    const base = raw.replace(/\/+$/, "");
+    const chosenModel = model.trim() || "gemini-2.5-flash";
+    if (/\/models\/[^/]+$/i.test(base)) return `${base}:generateContent`;
+    if (/generativelanguage\.googleapis\.com/i.test(base)) {
+      return `${base}/models/${chosenModel}:generateContent`;
+    }
+    return raw;
+  }
+  if (/\/(chat\/completions|messages|responses)(\/)?$/i.test(raw)) return raw;
+  const base = raw.replace(/\/+$/, "");
+  if (format === "anthropic") return `${base}/v1/messages`.replace(/\/v1\/v1\//, "/v1/");
+  return `${base}/chat/completions`.replace(/\/v1\/chat\/completions\/chat\/completions$/, "/v1/chat/completions");
+}
+
+function findProvider(value: string, preferredFormat?: ApiFormat) {
+  const haystack = value.toLowerCase();
+  return PROVIDERS.find((provider) => {
+    if (preferredFormat && provider.format !== preferredFormat) return false;
+    return provider.aliases.some((alias) => haystack.includes(alias.toLowerCase()));
+  });
+}
+
+function extractConfig(text: string) {
+  const urls = Array.from(text.matchAll(/https?:\/\/[^\s"'\\)]+/gi)).map((match) => stripQuotes(match[0]));
+  const headerKey =
+    text.match(/(?:Authorization:\s*Bearer|["']Authorization["']\s*:\s*["']Bearer)\s+([^"'\s\\]+)/i)?.[1] ||
+    text.match(/(?:x-api-key|api-key|x-goog-api-key)\s*:\s*["']?\$?\{?([^"'\s\\}]+)\}?/i)?.[1];
+  const assignedKey = text.match(/(?:api[_-]?key|auth[_-]?token|access[_-]?token|secret|token)\s*[:=]\s*["']([^"']+)["']/i)?.[1];
+  const prefixedKey = text.match(/["']?((?:sk-[a-zA-Z0-9_\-.]+|sk-ant-[a-zA-Z0-9_\-.]+|xai-[a-zA-Z0-9_\-.]+|AIza[a-zA-Z0-9_\-]+))["']?/i)?.[1];
+  const model =
+    text.match(/["']model["']\s*[:=]\s*["']([^"']+)["']/i)?.[1] ||
+    text.match(/model\s*=\s*["']([^"']+)["']/i)?.[1];
+  const provider = findProvider(text, /anthropic|claude|\/messages/i.test(text) ? "anthropic" : undefined);
+  const url = urls.find((item) => /chat\/completions|messages|generateContent/i.test(item)) || urls[0];
+  const format: ApiFormat | undefined =
+    /generateContent|generativelanguage|gemini/i.test(text)
+      ? "gemini"
+      : /anthropic|claude|\/messages/i.test(text)
+        ? "anthropic"
+        : provider?.format;
+  const authStyle: AuthStyle | undefined =
+    /x-goog-api-key/i.test(text)
+      ? "x-goog-api-key"
+      : /x-api-key/i.test(text)
+        ? "x-api-key"
+        : /api-key/i.test(text)
+          ? "api-key"
+          : /Authorization:\s*Bearer/i.test(text)
+            ? "bearer"
+            : provider?.authStyle;
+
+  return {
+    url,
+    key: stripQuotes(headerKey || assignedKey || prefixedKey || ""),
+    model: model ? stripQuotes(model) : undefined,
+    format,
+    authStyle,
+    provider,
+  };
+}
+
+function shortKey(key: string) {
+  if (!key) return "未填写";
+  if (key.length <= 14) return key;
+  return `${key.slice(0, 7)}...${key.slice(-5)}`;
+}
+
+export function ApiHealthChecker() {
+  const [providerId, setProviderId] = useState("custom");
+  const [url, setUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("");
+  const [format, setFormat] = useState<ApiFormat>("openai");
+  const [authStyle, setAuthStyle] = useState<AuthStyle>("bearer");
+  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
+  const [pasteText, setPasteText] = useState("");
+  const [intervalSeconds, setIntervalSeconds] = useState(30);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(60);
+  const [records, setRecords] = useState<HealthRecord[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<"idle" | "checking" | "success" | "error">("idle");
+  const [lastDetected, setLastDetected] = useState<string>("等待粘贴配置或选择厂商");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const requestUrl = useMemo(() => normalizeUrl(url, format, model), [format, model, url]);
+
+  const applyProvider = (provider: ProviderPreset) => {
+    setProviderId(provider.id);
+    setUrl(provider.url);
+    setModel(provider.model);
+    setFormat(provider.format);
+    setAuthStyle(provider.authStyle);
+    setLastDetected(`已套用 ${provider.name}`);
+  };
+
+  const applyExtractedConfig = (text: string) => {
+    const extracted = extractConfig(text);
+    const provider = extracted.provider;
+    if (provider) {
+      setProviderId(provider.id);
+      setUrl(provider.url);
+      setModel(provider.model);
+      setFormat(provider.format);
+      setAuthStyle(provider.authStyle);
+    }
+    if (extracted.format) setFormat(extracted.format);
+    if (extracted.authStyle) setAuthStyle(extracted.authStyle);
+    if (extracted.url) setUrl(normalizeUrl(extracted.url, extracted.format || provider?.format || format, extracted.model || model));
+    if (extracted.key) setApiKey(extracted.key);
+    if (extracted.model) setModel(extracted.model);
+    setLastDetected(
+      [
+        provider ? provider.name : "自定义配置",
+        extracted.url ? "URL" : "",
+        extracted.key ? "Key" : "",
+        extracted.model ? "模型" : "",
+      ].filter(Boolean).join(" · ") || "未识别到 URL 或 Key",
+    );
+  };
+
+  const checkHealth = useCallback(async () => {
+    if (!requestUrl.trim() || !model.trim()) return;
+
+    setCurrentStatus("checking");
+    const startTime = Date.now();
+
+    try {
+      const res = await fetch("/api/api-health-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: requestUrl,
+          apiKey,
+          model,
+          format,
+          authStyle,
+          prompt,
+          timeoutMs: timeoutSeconds * 1000,
+        }),
+      });
+      const latency = Date.now() - startTime;
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.ok) {
+        setRecords((prev) => [...prev.slice(-119), {
+          timestamp: Date.now(),
+          status: "success",
+          latency,
+          response: String(data.response || "").slice(0, 160),
+          statusCode: data.statusCode,
+        }]);
+        setCurrentStatus("success");
+      } else {
+        setRecords((prev) => [...prev.slice(-119), {
+          timestamp: Date.now(),
+          status: "error",
+          latency,
+          error: String(data.error || `HTTP ${res.status}`).slice(0, 220),
+          statusCode: data.statusCode || res.status,
+        }]);
+        setCurrentStatus("error");
+      }
+    } catch (err) {
+      setRecords((prev) => [...prev.slice(-119), {
+        timestamp: Date.now(),
+        status: "error",
+        latency: Date.now() - startTime,
+        error: err instanceof Error ? err.message : "未知错误",
+      }]);
+      setCurrentStatus("error");
+    }
+  }, [apiKey, authStyle, format, model, prompt, requestUrl, timeoutSeconds]);
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const startMonitoring = () => {
+    if (!requestUrl.trim() || !model.trim()) return;
+    stopTimer();
+    setIsRunning(true);
+    setRecords([]);
+    void checkHealth();
+    timerRef.current = setInterval(() => {
+      void checkHealth();
+    }, Math.max(1, intervalSeconds) * 1000);
+  };
+
+  const stopMonitoring = () => {
+    setIsRunning(false);
+    setCurrentStatus("idle");
+    stopTimer();
+  };
+
+  const resetRecords = () => {
+    setRecords([]);
+    setCurrentStatus("idle");
+  };
+
+  const stats = useMemo(() => {
+    const success = records.filter((record) => record.status === "success").length;
+    const error = records.length - success;
+    const avgLatency = records.length
+      ? Math.round(records.reduce((sum, record) => sum + record.latency, 0) / records.length)
+      : 0;
+    return {
+      total: records.length,
+      success,
+      error,
+      availability: records.length ? ((success / records.length) * 100).toFixed(1) : "0",
+      avgLatency,
+    };
+  }, [records]);
+
+  const recentRecords = records.slice(-60);
+
+  return (
+    <div className="w-full space-y-4">
+      <Card className="overflow-hidden border-2 py-0">
+        <div className="border-b bg-muted/50 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">API 活性检测</h2>
+              <p className="text-xs text-muted-foreground">粘贴配置或选择厂商，按固定间隔发送真实问答请求</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1 text-xs">
+              <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className={
+                currentStatus === "success"
+                  ? "text-green-600"
+                  : currentStatus === "error"
+                    ? "text-red-600"
+                    : currentStatus === "checking"
+                      ? "text-amber-600"
+                      : "text-muted-foreground"
+              }>
+                {currentStatus === "success" && "刚刚成功"}
+                {currentStatus === "error" && "刚刚失败"}
+                {currentStatus === "checking" && "请求中"}
+                {currentStatus === "idle" && "空闲"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">厂商预设</label>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {PROVIDERS.map((provider) => (
+                <Button
+                  key={provider.id}
+                  type="button"
+                  variant={providerId === provider.id ? "default" : "outline"}
+                  className="h-auto justify-start px-3 py-2 text-left"
+                  onClick={() => applyProvider(provider)}
+                >
+                  <span className="truncate text-xs">{provider.name}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-sm font-medium">快速粘贴</label>
+              <span className="text-xs text-muted-foreground">{lastDetected}</span>
+            </div>
+            <textarea
+              value={pasteText}
+              onChange={(event) => {
+                setPasteText(event.target.value);
+                applyExtractedConfig(event.target.value);
+              }}
+              onPaste={(event) => {
+                const text = event.clipboardData.getData("text");
+                applyExtractedConfig(text);
+              }}
+              placeholder={`粘贴 .env、curl、Python/JS SDK 配置，例如：\nbase_url="https://api.deepseek.com"\napi_key="sk-..." model="deepseek-v4-flash"`}
+              className="h-24 w-full resize-none rounded-md border bg-background px-3 py-2 font-mono text-xs outline-none focus:ring-2 focus:ring-primary"
+              spellCheck={false}
+            />
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">API URL</label>
+              <input
+                type="url"
+                value={url}
+                onChange={(event) => {
+                  setProviderId("custom");
+                  setUrl(event.target.value);
+                }}
+                placeholder="https://api.example.com/v1/chat/completions"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+              <div className="truncate text-xs text-muted-foreground">实际请求：{requestUrl || "等待填写"}</div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">API Key</label>
+              <input
+                type="text"
+                value={apiKey}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder="sk-..."
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+              <div className="text-xs text-muted-foreground">已识别：{shortKey(apiKey)}</div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">API 格式</label>
+              <select
+                value={format}
+                onChange={(event) => {
+                  const nextFormat = event.target.value as ApiFormat;
+                  setFormat(nextFormat);
+                  if (nextFormat === "gemini") setAuthStyle("x-goog-api-key");
+                  if (nextFormat === "anthropic" && authStyle === "bearer") setAuthStyle("x-api-key");
+                }}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              >
+                {Object.entries(FORMAT_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">认证头</label>
+              <select
+                value={authStyle}
+                onChange={(event) => setAuthStyle(event.target.value as AuthStyle)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              >
+                {Object.entries(AUTH_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">模型</label>
+              <input
+                type="text"
+                value={model}
+                onChange={(event) => setModel(event.target.value)}
+                placeholder="gpt-4.1-mini / claude-sonnet-4-5"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">检测问题</label>
+            <textarea
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              className="h-20 w-full resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              spellCheck={false}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">间隔（秒）</label>
+              <input
+                type="number"
+                min={1}
+                max={3600}
+                value={intervalSeconds}
+                onChange={(event) => setIntervalSeconds(Math.max(1, Number(event.target.value) || 1))}
+                className="w-28 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">超时（秒）</label>
+              <input
+                type="number"
+                min={5}
+                max={3600}
+                value={timeoutSeconds}
+                onChange={(event) => setTimeoutSeconds(Math.max(5, Number(event.target.value) || 5))}
+                className="w-28 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="flex gap-2">
+              {!isRunning ? (
+                <Button onClick={startMonitoring} disabled={!requestUrl.trim() || !model.trim()}>
+                  <Play className="mr-2 h-4 w-4" /> 开始测试
+                </Button>
+              ) : (
+                <Button variant="destructive" onClick={stopMonitoring}>
+                  <Square className="mr-2 h-4 w-4" /> 停止
+                </Button>
+              )}
+              <Button variant="outline" onClick={resetRecords} disabled={isRunning}>
+                <RotateCcw className="mr-2 h-4 w-4" /> 重置
+              </Button>
+              <Button variant="outline" onClick={() => applyExtractedConfig(pasteText)}>
+                <ClipboardPaste className="mr-2 h-4 w-4" /> 重新识别
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-2 p-4">
+          <div className="text-xs text-muted-foreground">总请求</div>
+          <div className="mt-1 text-2xl font-bold">{stats.total}</div>
+        </Card>
+        <Card className="border-2 p-4">
+          <div className="text-xs text-muted-foreground">可用率</div>
+          <div className="mt-1 text-2xl font-bold text-green-600">{stats.availability}%</div>
+        </Card>
+        <Card className="border-2 p-4">
+          <div className="text-xs text-muted-foreground">成功 / 失败</div>
+          <div className="mt-1 text-2xl font-bold">
+            <span className="text-green-600">{stats.success}</span>
+            <span className="mx-1 text-muted-foreground">/</span>
+            <span className="text-red-600">{stats.error}</span>
+          </div>
+        </Card>
+        <Card className="border-2 p-4">
+          <div className="text-xs text-muted-foreground">平均延迟</div>
+          <div className="mt-1 text-2xl font-bold">{stats.avgLatency}ms</div>
+        </Card>
+      </div>
+
+      <Card className="overflow-hidden border-2 py-0">
+        <div className="border-b bg-muted/50 px-4 py-3">
+          <h2 className="text-sm font-semibold">活性柱状图</h2>
+          <p className="text-xs text-muted-foreground">绿色代表单位请求成功，红色代表失败；悬停可看时间、延迟和回复</p>
+        </div>
+        <div className="p-4">
+          {recentRecords.length ? (
+            <div className="overflow-x-auto pb-2">
+              <div className="flex min-h-28 items-end gap-1 pt-9">
+                {recentRecords.map((record, index) => {
+                  const requestTime = new Date(record.timestamp).toLocaleTimeString();
+                  return (
+                    <div
+                      key={`${record.timestamp}-${index}`}
+                      className="group relative flex h-20 w-4 shrink-0 items-end justify-center"
+                    >
+                      <div className="pointer-events-none absolute left-1/2 top-0 z-10 w-max -translate-x-1/2 -translate-y-8 rounded-md border bg-popover px-2 py-1 text-[11px] leading-tight text-popover-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                        <div>{requestTime}</div>
+                        <div className={record.status === "success" ? "text-green-600" : "text-red-600"}>
+                          {record.status === "success" ? "成功" : "失败"} · {record.latency}ms
+                        </div>
+                      </div>
+                      <div
+                        className={`w-4 rounded-sm transition-transform group-hover:-translate-y-1 ${
+                          record.status === "success" ? "bg-green-500" : "bg-red-500"
+                        }`}
+                        style={{ height: `${Math.min(72, Math.max(18, record.latency / 18))}px` }}
+                        title={`${record.status === "success" ? "成功" : "失败"} · ${record.latency}ms · ${requestTime}${record.statusCode ? `\nHTTP ${record.statusCode}` : ""}${record.response ? `\n回复: ${record.response}` : ""}${record.error ? `\n错误: ${record.error}` : ""}`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-20 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+              开始测试后这里会出现请求活性柱
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {records.length > 0 && (
+        <Card className="overflow-hidden border-2 py-0">
+          <div className="border-b bg-muted/50 px-4 py-3">
+            <h2 className="text-sm font-semibold">检测记录</h2>
+            <p className="text-xs text-muted-foreground">最近 {Math.min(records.length, 12)} 条</p>
+          </div>
+          <div className="divide-y">
+            {records.slice(-12).reverse().map((record, index) => (
+              <div key={`${record.timestamp}-${index}`} className="flex items-start gap-3 px-4 py-3">
+                {record.status === "success" ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                ) : (
+                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                    <span>{record.status === "success" ? "成功" : "失败"}</span>
+                    <span className="text-xs text-muted-foreground">{record.latency}ms</span>
+                    {record.statusCode && <span className="text-xs text-muted-foreground">HTTP {record.statusCode}</span>}
+                  </div>
+                  {record.response && <div className="mt-1 truncate text-xs text-muted-foreground">回复：{record.response}</div>}
+                  {record.error && <div className="mt-1 break-words text-xs text-red-600">错误：{record.error}</div>}
+                  <div className="mt-1 text-xs text-muted-foreground">{new Date(record.timestamp).toLocaleString()}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
