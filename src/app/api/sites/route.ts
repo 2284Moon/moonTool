@@ -36,11 +36,55 @@ function getClientIp(request: Request): string {
 
 // ========== 读写 Edge Config ==========
 
+/** 从 REST API 响应中提取站点列表（兼容多种返回格式） */
+function extractSitesFromApi(data: unknown): Site[] | null {
+  if (!data || typeof data !== "object") return null;
+  const obj = data as Record<string, unknown>;
+
+  // 格式1: { items: [{ key: "...", value: [...] }] }
+  if (Array.isArray(obj.items)) {
+    const item = obj.items.find(
+      (i: unknown) => i && typeof i === "object" && (i as Record<string, unknown>).key === EDGE_CONFIG_KEY
+    ) as { value?: Site[] } | undefined;
+    if (item && Array.isArray(item.value)) return item.value;
+  }
+
+  // 格式2: 直接就是数组
+  if (Array.isArray(data)) return data as Site[];
+
+  // 格式3: 单个 item { key: "...", value: [...] }
+  if (obj.key === EDGE_CONFIG_KEY && Array.isArray(obj.value)) return obj.value as Site[];
+
+  return null;
+}
+
 /**
  * 从 Edge Config 读取站点列表
- * 读取失败时回退到默认数据，不抛异常
+ * 优先走 REST API（无边缘缓存，实时数据），SDK 作为回退
  */
 async function readSites(): Promise<Site[]> {
+  const token = process.env.VERCEL_TOKEN;
+  const edgeConfigId = getEdgeConfigId();
+
+  // 1. 优先 REST API 直读 — 跟写路径同一通道，无 CDN 缓存
+  if (token && edgeConfigId) {
+    try {
+      const res = await fetch(
+        `${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const stored = extractSitesFromApi(await res.json());
+        if (stored && stored.length > 0) return stored;
+        await seedDefaultSites();
+        return defaultSites;
+      }
+    } catch {
+      // 回退到 SDK
+    }
+  }
+
+  // 2. 回退：SDK 读取（有边缘缓存，本地开发 / VERCEL_TOKEN 缺失时走这里）
   const connectionString = process.env.EDGE_CONFIG;
   if (!connectionString) return defaultSites;
 
@@ -53,18 +97,8 @@ async function readSites(): Promise<Site[]> {
       return defaultSites;
     }
 
-    // 自动合并本地新增的站点
-    const storedIds = new Set(stored.map((s) => s.id));
-    const newSites = defaultSites.filter((s) => !storedIds.has(s.id));
-    if (newSites.length > 0) {
-      const merged = [...stored, ...newSites];
-      await writeSites(merged);
-      return merged;
-    }
-
     return stored;
   } catch (err) {
-    // Edge Config 读取失败时回退到默认数据，不阻塞请求
     console.error("Edge Config 读取失败:", err);
     return defaultSites;
   }
@@ -90,18 +124,6 @@ type WriteResult =
 async function writeSites(sites: Site[]): Promise<WriteResult> {
   const token = process.env.VERCEL_TOKEN;
   const edgeConfigId = getEdgeConfigId();
-
-  // [临时调试] 输出所有相关 env 的状态
-  console.log("[DEBUG writeSites]", {
-    VERCEL_TOKEN_exists: !!process.env.VERCEL_TOKEN,
-    VERCEL_TOKEN_length: process.env.VERCEL_TOKEN?.length,
-    EDGE_CONFIG_ID_exists: !!process.env.EDGE_CONFIG_ID,
-    EDGE_CONFIG_exists: !!process.env.EDGE_CONFIG,
-    EDGE_CONFIG_prefix: process.env.EDGE_CONFIG?.substring(0, 40),
-    DELETE_SECRET_exists: !!process.env.DELETE_SECRET,
-    NODE_ENV: process.env.NODE_ENV,
-    edgeConfigId,
-  });
 
   if (!token || !edgeConfigId) {
     const missing: string[] = [];
