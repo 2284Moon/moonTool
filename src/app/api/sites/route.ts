@@ -234,7 +234,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const url = request.url.includes("://") ? new URL(request.url) : new URL(request.url, "http://localhost");
+  const { searchParams } = url;
   const id = searchParams.get("id");
   const deleteKey = request.headers.get("x-delete-key");
 
