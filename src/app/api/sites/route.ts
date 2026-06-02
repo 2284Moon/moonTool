@@ -148,20 +148,31 @@ async function readSites(): Promise<Site[]> {
     return defaultSites;
   }
 
-  // 4. 归一化存储数据，补全缺失字段
-  const normalized = stored.map((s) => normalizeSite(s as unknown as Record<string, unknown>));
+  // 4. 归一化存储数据，补全缺失字段，过滤掉空 id 的无效记录
+  const validSites = stored
+    .map((s) => normalizeSite(s as unknown as Record<string, unknown>))
+    .filter((s) => s.id !== "");
 
-  // 5. 检查本地是否有新增的默认站点，自动合并到 Edge Config
-  const storedIds = new Set(normalized.map((s) => s.id));
+  // 5. 如果过滤掉了无效记录，清理 Edge Config 并直接返回干净数据
+  if (validSites.length < stored.length) {
+    console.warn(`readSites: 清理了 ${stored.length - validSites.length} 条空 id 记录`);
+    const customSites = validSites.filter((s) => !defaultIds.has(s.id));
+    const clean = [...defaultSites, ...customSites];
+    await writeSites(clean);
+    return clean;
+  }
+
+  // 6. 检查本地是否有新增的默认站点，自动合并到 Edge Config
+  const storedIds = new Set(validSites.map((s) => s.id));
   const newDefaults = defaultSites.filter((s) => !storedIds.has(s.id));
 
   if (newDefaults.length > 0) {
-    const merged = [...normalized, ...newDefaults];
+    const merged = [...validSites, ...newDefaults];
     await writeSites(merged);
     return merged;
   }
 
-  return normalized;
+  return validSites;
 }
 
 /** 首次写入默认数据到 Edge Config */
