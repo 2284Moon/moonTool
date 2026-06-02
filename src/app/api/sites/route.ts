@@ -9,82 +9,124 @@ const POST_COOLDOWN_MS = 60_000;
 
 const addTimestamps = new Map<string, number>();
 
+// ========== 工具函数 ==========
+
+/**
+ * 获取 Edge Config ID
+ * 优先读 EDGE_CONFIG_ID，否则从 EDGE_CONFIG 连接串中提取
+ */
 function getEdgeConfigId(): string | undefined {
-  return process.env.EDGE_CONFIG_ID || process.env.EDGE_CONFIG?.split("/").pop();
-}
+  if (process.env.EDGE_CONFIG_ID) return process.env.EDGE_CONFIG_ID;
 
-async function readSites(): Promise<Site[]> {
-  const connectionString = process.env.EDGE_CONFIG;
-  if (!connectionString) return defaultSites;
-
-  const edgeConfig = createClient(connectionString);
-  const stored = await edgeConfig.get<Site[]>(EDGE_CONFIG_KEY);
-
-  // 没有存储过，写入默认数据
-  if (!stored || stored.length === 0) {
-    await seedDefaultSites();
-    return defaultSites;
+  // EDGE_CONFIG 格式: https://edge-config.vercel.com/<id>?token=xxx
+  // 之前用 split("/").pop() 会把 query string 也带进来，导致 API URL 畸形
+  if (process.env.EDGE_CONFIG) {
+    try {
+      return new URL(process.env.EDGE_CONFIG).pathname.split("/").pop();
+    } catch {
+      return undefined;
+    }
   }
-
-  // 检查本地新增的站点，自动合并
-  const storedIds = new Set(stored.map((s) => s.id));
-  const newSites = defaultSites.filter((s) => !storedIds.has(s.id));
-  if (newSites.length > 0) {
-    const merged = [...stored, ...newSites];
-    await writeSites(merged);
-    return merged;
-  }
-
-  return stored;
-}
-
-async function seedDefaultSites() {
-  const token = process.env.VERCEL_TOKEN;
-  const edgeConfigId = getEdgeConfigId();
-  if (!token || !edgeConfigId) return;
-
-  try {
-    await fetch(`${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: [
-          { operation: "upsert", key: EDGE_CONFIG_KEY, value: defaultSites },
-        ],
-      }),
-    });
-  } catch {
-    // silently fail
-  }
-}
-
-async function writeSites(sites: Site[]): Promise<boolean> {
-  const token = process.env.VERCEL_TOKEN;
-  const edgeConfigId = getEdgeConfigId();
-  if (!token || !edgeConfigId) return false;
-
-  const res = await fetch(`${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      items: [
-        { operation: "upsert", key: EDGE_CONFIG_KEY, value: sites },
-      ],
-    }),
-  });
-
-  return res.ok;
+  return undefined;
 }
 
 function getClientIp(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
+
+// ========== 读写 Edge Config ==========
+
+/**
+ * 从 Edge Config 读取站点列表
+ * 读取失败时回退到默认数据，不抛异常
+ */
+async function readSites(): Promise<Site[]> {
+  const connectionString = process.env.EDGE_CONFIG;
+  if (!connectionString) return defaultSites;
+
+  try {
+    const edgeConfig = createClient(connectionString);
+    const stored = await edgeConfig.get<Site[]>(EDGE_CONFIG_KEY);
+
+    if (!stored || stored.length === 0) {
+      await seedDefaultSites();
+      return defaultSites;
+    }
+
+    // 自动合并本地新增的站点
+    const storedIds = new Set(stored.map((s) => s.id));
+    const newSites = defaultSites.filter((s) => !storedIds.has(s.id));
+    if (newSites.length > 0) {
+      const merged = [...stored, ...newSites];
+      await writeSites(merged);
+      return merged;
+    }
+
+    return stored;
+  } catch (err) {
+    // Edge Config 读取失败时回退到默认数据，不阻塞请求
+    console.error("Edge Config 读取失败:", err);
+    return defaultSites;
+  }
+}
+
+/** 首次写入默认数据到 Edge Config */
+async function seedDefaultSites() {
+  const result = await writeSites(defaultSites);
+  if (!result.ok) {
+    console.warn("seedDefaultSites 写入失败:", result.reason, "detail" in result ? result.detail : "");
+  }
+}
+
+type WriteResult =
+  | { ok: true }
+  | { ok: false; reason: "missing_config" }
+  | { ok: false; reason: "api_error"; detail: string };
+
+/**
+ * 通过 Vercel API 写入站点列表到 Edge Config
+ * 返回 WriteResult 区分"环境变量缺失"和"API 调用失败"
+ */
+async function writeSites(sites: Site[]): Promise<WriteResult> {
+  const token = process.env.VERCEL_TOKEN;
+  const edgeConfigId = getEdgeConfigId();
+
+  if (!token || !edgeConfigId) {
+    return { ok: false, reason: "missing_config" };
+  }
+
+  try {
+    const res = await fetch(
+      `${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: [
+            { operation: "upsert", key: EDGE_CONFIG_KEY, value: sites },
+          ],
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "(无法读取响应体)");
+      console.error(`Vercel API 写入失败 (${res.status}):`, body);
+      return { ok: false, reason: "api_error", detail: `${res.status}: ${body}` };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("Vercel API 请求异常:", detail);
+    return { ok: false, reason: "api_error", detail };
+  }
+}
+
+// ========== API Handlers ==========
 
 export async function GET() {
   const sites = await readSites();
@@ -133,10 +175,19 @@ export async function POST(request: Request) {
     tags: tags || [],
   };
 
-  const ok = await writeSites([...stored, newSite]);
-  if (!ok) {
+  const result = await writeSites([...stored, newSite]);
+
+  if (!result.ok) {
+    if (result.reason === "missing_config") {
+      return NextResponse.json(
+        { error: "存储服务未配置，请在 Vercel 后台连接 Edge Config，并设置 VERCEL_TOKEN 和 EDGE_CONFIG_ID 环境变量" },
+        { status: 500 }
+      );
+    }
+    // api_error — 打印到服务端日志，返给前端脱敏信息
+    console.error("writeSites api_error:", result.detail);
     return NextResponse.json(
-      { error: "存储服务未配置，请在 Vercel 后台连接 Edge Config，并设置 VERCEL_TOKEN 环境变量" },
+      { error: "数据存储失败，请稍后重试" },
       { status: 500 }
     );
   }
@@ -166,10 +217,18 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "未找到该网站" }, { status: 404 });
   }
 
-  const ok = await writeSites(filtered);
-  if (!ok) {
+  const result = await writeSites(filtered);
+
+  if (!result.ok) {
+    if (result.reason === "missing_config") {
+      return NextResponse.json(
+        { error: "存储服务未配置，请在 Vercel 后台连接 Edge Config，并设置 VERCEL_TOKEN 和 EDGE_CONFIG_ID 环境变量" },
+        { status: 500 }
+      );
+    }
+    console.error("writeSites api_error:", result.detail);
     return NextResponse.json(
-      { error: "存储服务未配置" },
+      { error: "数据存储失败，请稍后重试" },
       { status: 500 }
     );
   }

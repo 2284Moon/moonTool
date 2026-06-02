@@ -15,7 +15,8 @@
       "Bash(pnpm dev *)",
       "Bash(pnpm add *)",
       "WebSearch",
-      "Bash(pnpm remove *)"
+      "Bash(pnpm remove *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
