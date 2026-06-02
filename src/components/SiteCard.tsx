@@ -8,6 +8,14 @@ import { ExternalLink, Trash2 } from "lucide-react";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import type { Site } from "@/types";
 
+function safeHostname(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).hostname;
+  } catch {
+    return rawUrl;
+  }
+}
+
 interface SiteCardProps {
   site: Site;
   index?: number;
@@ -82,7 +90,7 @@ export function SiteCard({ site, index = 0, onDelete }: SiteCardProps) {
                 {site.description}
               </p>
               <p className="text-xs text-muted-foreground/70">
-                {(() => { try { return new URL(site.url).hostname } catch { return site.url } })()}
+                {safeHostname(site.url)}
               </p>
               <div className="mt-0.5 flex flex-wrap gap-1">
                 {site.tags.slice(0, 3).map((tag) => (
