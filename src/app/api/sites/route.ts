@@ -36,6 +36,18 @@ function getClientIp(request: Request): string {
 
 // ========== 读写 Edge Config ==========
 
+/** 补全站点缺失字段的默认值 */
+function normalizeSite(raw: Record<string, unknown>): Site {
+  return {
+    id: String(raw.id ?? ""),
+    name: String(raw.name ?? ""),
+    url: String(raw.url ?? ""),
+    description: String(raw.description ?? ""),
+    icon: String(raw.icon || "🌐"),
+    tags: Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
+  };
+}
+
 /** 从 REST API 响应中提取站点列表（兼容多种返回格式） */
 function extractSitesFromApi(data: unknown): Site[] | null {
   if (!data || typeof data !== "object") return null;
@@ -45,15 +57,21 @@ function extractSitesFromApi(data: unknown): Site[] | null {
   if (Array.isArray(obj.items)) {
     const item = obj.items.find(
       (i: unknown) => i && typeof i === "object" && (i as Record<string, unknown>).key === EDGE_CONFIG_KEY
-    ) as { value?: Site[] } | undefined;
-    if (item && Array.isArray(item.value)) return item.value;
+    ) as { value?: unknown } | undefined;
+    if (item && Array.isArray(item.value)) {
+      return item.value.map((s) => normalizeSite(s as Record<string, unknown>));
+    }
   }
 
   // 格式2: 直接就是数组
-  if (Array.isArray(data)) return data as Site[];
+  if (Array.isArray(data)) {
+    return (data as Array<Record<string, unknown>>).map(normalizeSite);
+  }
 
   // 格式3: 单个 item { key: "...", value: [...] }
-  if (obj.key === EDGE_CONFIG_KEY && Array.isArray(obj.value)) return obj.value as Site[];
+  if (obj.key === EDGE_CONFIG_KEY && Array.isArray(obj.value)) {
+    return (obj.value as Array<Record<string, unknown>>).map(normalizeSite);
+  }
 
   return null;
 }
