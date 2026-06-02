@@ -91,6 +91,18 @@ async function writeSites(sites: Site[]): Promise<WriteResult> {
   const token = process.env.VERCEL_TOKEN;
   const edgeConfigId = getEdgeConfigId();
 
+  // [临时调试] 输出所有相关 env 的状态
+  console.log("[DEBUG writeSites]", {
+    VERCEL_TOKEN_exists: !!process.env.VERCEL_TOKEN,
+    VERCEL_TOKEN_length: process.env.VERCEL_TOKEN?.length,
+    EDGE_CONFIG_ID_exists: !!process.env.EDGE_CONFIG_ID,
+    EDGE_CONFIG_exists: !!process.env.EDGE_CONFIG,
+    EDGE_CONFIG_prefix: process.env.EDGE_CONFIG?.substring(0, 40),
+    DELETE_SECRET_exists: !!process.env.DELETE_SECRET,
+    NODE_ENV: process.env.NODE_ENV,
+    edgeConfigId,
+  });
+
   if (!token || !edgeConfigId) {
     const missing: string[] = [];
     if (!token) missing.push("VERCEL_TOKEN");
