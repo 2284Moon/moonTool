@@ -7,19 +7,17 @@ const EDGE_CONFIG_KEY = "sites";
 const VERCEL_API = "https://api.vercel.com";
 const POST_COOLDOWN_MS = 60_000;
 
+/** 默认站点 ID 集合 — 这些站点不允许删除 */
+const defaultIds = new Set(defaultSites.map((s) => s.id));
+
 const addTimestamps = new Map<string, number>();
 
 // ========== 工具函数 ==========
 
-/**
- * 获取 Edge Config ID
- * 优先读 EDGE_CONFIG_ID，否则从 EDGE_CONFIG 连接串中提取
- */
 function getEdgeConfigId(): string | undefined {
   if (process.env.EDGE_CONFIG_ID) return process.env.EDGE_CONFIG_ID;
 
   // EDGE_CONFIG 格式: https://edge-config.vercel.com/<id>?token=xxx
-  // 之前用 split("/").pop() 会把 query string 也带进来，导致 API URL 畸形
   if (process.env.EDGE_CONFIG) {
     try {
       return new URL(process.env.EDGE_CONFIG).pathname.split("/").pop();
@@ -36,7 +34,10 @@ function getClientIp(request: Request): string {
 
 // ========== 读写 Edge Config ==========
 
-/** 补全站点缺失字段的默认值 */
+/**
+ * 补全站点缺失字段的默认值
+ * Edge Config 里的旧数据可能缺少 tags、icon 等字段
+ */
 function normalizeSite(raw: Record<string, unknown>): Site {
   return {
     id: String(raw.id ?? ""),
@@ -48,78 +49,119 @@ function normalizeSite(raw: Record<string, unknown>): Site {
   };
 }
 
+/**
+ * 尝试将任意格式的原始值解析为 Site[]
+ * 处理两种情况：
+ *   - value 已经是解析好的数组 [{...}, {...}]
+ *   - value 是 JSON 字符串 "[{...},{...}]"
+ */
+function tryParseSites(raw: unknown): Site[] | null {
+  if (!Array.isArray(raw)) return null;
+
+  const parsed = raw
+    .map((item) => {
+      // 如果元素是 JSON 字符串，先 parse
+      if (typeof item === "string") {
+        try {
+          return JSON.parse(item);
+        } catch {
+          return null;
+        }
+      }
+      return item;
+    })
+    .filter((item): item is Record<string, unknown> => item != null && typeof item === "object");
+
+  return parsed.length > 0 ? parsed.map(normalizeSite) : null;
+}
+
 /** 从 REST API 响应中提取站点列表（兼容多种返回格式） */
 function extractSitesFromApi(data: unknown): Site[] | null {
   if (!data || typeof data !== "object") return null;
   const obj = data as Record<string, unknown>;
 
-  // 格式1: { items: [{ key: "...", value: [...] }] }
+  // 格式: { items: [{ key: "sites", value: [...] }] }
   if (Array.isArray(obj.items)) {
     const item = obj.items.find(
-      (i: unknown) => i && typeof i === "object" && (i as Record<string, unknown>).key === EDGE_CONFIG_KEY
+      (i: unknown) =>
+        i && typeof i === "object" && (i as Record<string, unknown>).key === EDGE_CONFIG_KEY
     ) as { value?: unknown } | undefined;
-    if (item && Array.isArray(item.value)) {
-      return item.value.map((s) => normalizeSite(s as Record<string, unknown>));
+    if (item && item.value != null) {
+      // value 可能是已经解析的数组，也可能是 JSON 字符串
+      if (Array.isArray(item.value)) return tryParseSites(item.value);
+      if (typeof item.value === "string") {
+        try {
+          const parsed = JSON.parse(item.value);
+          return tryParseSites(parsed);
+        } catch {
+          return null;
+        }
+      }
     }
   }
 
-  // 格式2: 直接就是数组
-  if (Array.isArray(data)) {
-    return (data as Array<Record<string, unknown>>).map(normalizeSite);
-  }
-
-  // 格式3: 单个 item { key: "...", value: [...] }
-  if (obj.key === EDGE_CONFIG_KEY && Array.isArray(obj.value)) {
-    return (obj.value as Array<Record<string, unknown>>).map(normalizeSite);
-  }
-
-  return null;
+  // 兜底：直接就是数组
+  return tryParseSites(data);
 }
 
 /**
- * 从 Edge Config 读取站点列表
- * 优先走 REST API（无边缘缓存，实时数据），SDK 作为回退
+ * 从 Edge Config 读取所有站点
+ * 优先走 REST API（无边缘缓存），SDK 回退
+ * 返回值始终包含 defaultSites，且自动合并本地新增的默认站点
  */
 async function readSites(): Promise<Site[]> {
+  let stored: Site[] | null = null;
+
   const token = process.env.VERCEL_TOKEN;
   const edgeConfigId = getEdgeConfigId();
 
-  // 1. 优先 REST API 直读 — 跟写路径同一通道，无 CDN 缓存
+  // 1. 优先 REST API — 无 CDN 缓存，实时数据
   if (token && edgeConfigId) {
     try {
-      const res = await fetch(
-        `${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await fetch(`${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
-        const stored = extractSitesFromApi(await res.json());
-        if (stored && stored.length > 0) return stored;
-        await seedDefaultSites();
-        return defaultSites;
+        stored = extractSitesFromApi(await res.json());
       }
     } catch {
       // 回退到 SDK
     }
   }
 
-  // 2. 回退：SDK 读取（有边缘缓存，本地开发 / VERCEL_TOKEN 缺失时走这里）
-  const connectionString = process.env.EDGE_CONFIG;
-  if (!connectionString) return defaultSites;
-
-  try {
-    const edgeConfig = createClient(connectionString);
-    const stored = await edgeConfig.get<Site[]>(EDGE_CONFIG_KEY);
-
-    if (!stored || stored.length === 0) {
-      await seedDefaultSites();
-      return defaultSites;
+  // 2. 回退：SDK 读取（有边缘缓存）
+  if (!stored) {
+    const connectionString = process.env.EDGE_CONFIG;
+    if (connectionString) {
+      try {
+        const edgeConfig = createClient(connectionString);
+        stored = (await edgeConfig.get<Site[]>(EDGE_CONFIG_KEY)) ?? null;
+      } catch (err) {
+        console.error("Edge Config SDK 读取失败:", err);
+      }
     }
+  }
 
-    return stored;
-  } catch (err) {
-    console.error("Edge Config 读取失败:", err);
+  // 3. 没有存储数据 → 写入默认数据并返回
+  if (!stored || stored.length === 0) {
+    await seedDefaultSites();
     return defaultSites;
   }
+
+  // 4. 归一化存储数据，补全缺失字段
+  const normalized = stored.map((s) => normalizeSite(s as unknown as Record<string, unknown>));
+
+  // 5. 检查本地是否有新增的默认站点，自动合并到 Edge Config
+  const storedIds = new Set(normalized.map((s) => s.id));
+  const newDefaults = defaultSites.filter((s) => !storedIds.has(s.id));
+
+  if (newDefaults.length > 0) {
+    const merged = [...normalized, ...newDefaults];
+    await writeSites(merged);
+    return merged;
+  }
+
+  return normalized;
 }
 
 /** 首次写入默认数据到 Edge Config */
@@ -135,10 +177,6 @@ type WriteResult =
   | { ok: false; reason: "missing_config"; missing: string[] }
   | { ok: false; reason: "api_error"; detail: string };
 
-/**
- * 通过 Vercel API 写入站点列表到 Edge Config
- * 返回 WriteResult 区分"环境变量缺失"和"API 调用失败"
- */
 async function writeSites(sites: Site[]): Promise<WriteResult> {
   const token = process.env.VERCEL_TOKEN;
   const edgeConfigId = getEdgeConfigId();
@@ -151,21 +189,16 @@ async function writeSites(sites: Site[]): Promise<WriteResult> {
   }
 
   try {
-    const res = await fetch(
-      `${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: [
-            { operation: "upsert", key: EDGE_CONFIG_KEY, value: sites },
-          ],
-        }),
-      }
-    );
+    const res = await fetch(`${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: [{ operation: "upsert", key: EDGE_CONFIG_KEY, value: sites }],
+      }),
+    });
 
     if (!res.ok) {
       const body = await res.text().catch(() => "(无法读取响应体)");
@@ -209,11 +242,13 @@ export async function POST(request: Request) {
   }
 
   const normalizedUrl = url.toLowerCase().replace(/\/+$/, "");
-  const id = normalizedUrl
-    .replace(/^https?:\/\//, "")
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+  const id =
+    "custom-" +
+    normalizedUrl
+      .replace(/^https?:\/\//, "")
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
 
   const stored = await readSites();
 
@@ -222,7 +257,7 @@ export async function POST(request: Request) {
   }
 
   const newSite: Site = {
-    id: `custom-${id}`,
+    id,
     name,
     url,
     description: description || "",
@@ -235,16 +270,14 @@ export async function POST(request: Request) {
   if (!result.ok) {
     if (result.reason === "missing_config") {
       return NextResponse.json(
-        { error: `存储服务未配置，缺少环境变量：${result.missing.join("、")}。请在 Vercel 后台 → Settings → Environment Variables 中设置` },
+        {
+          error: `存储服务未配置，缺少环境变量：${result.missing.join("、")}。请在 Vercel 后台 → Settings → Environment Variables 中设置`,
+        },
         { status: 500 }
       );
     }
-    // api_error — 打印到服务端日志，返给前端脱敏信息
     console.error("writeSites api_error:", result.detail);
-    return NextResponse.json(
-      { error: "数据存储失败，请稍后重试" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "数据存储失败，请稍后重试" }, { status: 500 });
   }
 
   addTimestamps.set(ip, now);
@@ -252,13 +285,19 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const url = request.url.includes("://") ? new URL(request.url) : new URL(request.url, "http://localhost");
-  const { searchParams } = url;
-  const id = searchParams.get("id");
+  const reqUrl = request.url.includes("://")
+    ? new URL(request.url)
+    : new URL(request.url, "http://localhost");
+  const id = reqUrl.searchParams.get("id");
   const deleteKey = request.headers.get("x-delete-key");
 
   if (!id) {
     return NextResponse.json({ error: "缺少 id 参数" }, { status: 400 });
+  }
+
+  // 基础数据不允许删除
+  if (defaultIds.has(id)) {
+    return NextResponse.json({ error: "基础数据不允许删除" }, { status: 403 });
   }
 
   const expectedKey = process.env.DELETE_SECRET;
@@ -278,15 +317,14 @@ export async function DELETE(request: Request) {
   if (!result.ok) {
     if (result.reason === "missing_config") {
       return NextResponse.json(
-        { error: `存储服务未配置，缺少环境变量：${result.missing.join("、")}。请在 Vercel 后台 → Settings → Environment Variables 中设置` },
+        {
+          error: `存储服务未配置，缺少环境变量：${result.missing.join("、")}。请在 Vercel 后台 → Settings → Environment Variables 中设置`,
+        },
         { status: 500 }
       );
     }
     console.error("writeSites api_error:", result.detail);
-    return NextResponse.json(
-      { error: "数据存储失败，请稍后重试" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "数据存储失败，请稍后重试" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
