@@ -80,7 +80,7 @@ async function seedDefaultSites() {
 
 type WriteResult =
   | { ok: true }
-  | { ok: false; reason: "missing_config" }
+  | { ok: false; reason: "missing_config"; missing: string[] }
   | { ok: false; reason: "api_error"; detail: string };
 
 /**
@@ -92,7 +92,10 @@ async function writeSites(sites: Site[]): Promise<WriteResult> {
   const edgeConfigId = getEdgeConfigId();
 
   if (!token || !edgeConfigId) {
-    return { ok: false, reason: "missing_config" };
+    const missing: string[] = [];
+    if (!token) missing.push("VERCEL_TOKEN");
+    if (!edgeConfigId) missing.push("EDGE_CONFIG_ID（或 EDGE_CONFIG）");
+    return { ok: false, reason: "missing_config", missing };
   }
 
   try {
@@ -180,7 +183,7 @@ export async function POST(request: Request) {
   if (!result.ok) {
     if (result.reason === "missing_config") {
       return NextResponse.json(
-        { error: "存储服务未配置，请在 Vercel 后台连接 Edge Config，并设置 VERCEL_TOKEN 和 EDGE_CONFIG_ID 环境变量" },
+        { error: `存储服务未配置，缺少环境变量：${result.missing.join("、")}。请在 Vercel 后台 → Settings → Environment Variables 中设置` },
         { status: 500 }
       );
     }
@@ -222,7 +225,7 @@ export async function DELETE(request: Request) {
   if (!result.ok) {
     if (result.reason === "missing_config") {
       return NextResponse.json(
-        { error: "存储服务未配置，请在 Vercel 后台连接 Edge Config，并设置 VERCEL_TOKEN 和 EDGE_CONFIG_ID 环境变量" },
+        { error: `存储服务未配置，缺少环境变量：${result.missing.join("、")}。请在 Vercel 后台 → Settings → Environment Variables 中设置` },
         { status: 500 }
       );
     }
