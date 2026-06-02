@@ -167,6 +167,7 @@ async function readSites(): Promise<Site[]> {
   const newDefaults = defaultSites.filter((s) => !storedIds.has(s.id));
 
   if (newDefaults.length > 0) {
+    console.log("[readSites] auto-merge 新增默认站点", { newDefaultIds: newDefaults.map((s) => s.id), beforeCount: validSites.length });
     const merged = [...validSites, ...newDefaults];
     await writeSites(merged);
     return merged;
@@ -191,6 +192,8 @@ type WriteResult =
 async function writeSites(sites: Site[]): Promise<WriteResult> {
   const token = process.env.VERCEL_TOKEN;
   const edgeConfigId = getEdgeConfigId();
+
+  console.log("[writeSites] 写入请求", { count: sites.length, firstIds: sites.slice(0, 3).map((s) => s.id) });
 
   if (!token || !edgeConfigId) {
     const missing: string[] = [];
@@ -262,6 +265,7 @@ export async function POST(request: Request) {
       .replace(/^-|-$/g, "");
 
   const stored = await readSites();
+  console.log("[POST] readSites 返回", { count: stored.length, customCount: stored.filter((s) => !defaultIds.has(s.id)).length });
 
   if (stored.some((s) => s.url.toLowerCase().replace(/\/+$/, "") === normalizedUrl)) {
     return NextResponse.json({ error: "该网站已存在" }, { status: 409 });
