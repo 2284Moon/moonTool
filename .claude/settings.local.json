@@ -16,7 +16,11 @@
       "Bash(pnpm add *)",
       "WebSearch",
       "Bash(pnpm remove *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(npx next *)"
     ]
   }
 }
