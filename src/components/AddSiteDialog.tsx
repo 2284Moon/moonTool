@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
+import type { Site } from "@/types";
 
 interface AddSiteDialogProps {
-  onAdded: () => void;
+  /** API 成功后拿新站点对象回调，父组件直接插本地 state，无需重新拉数据 */
+  onAdded: (newSite: Site) => void;
 }
 
 export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
@@ -53,7 +55,7 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
       setIcon("🌐");
       setTags("");
       setOpen(false);
-      onAdded();
+      onAdded(data);
     } catch {
       setError("网络错误，请重试");
     } finally {

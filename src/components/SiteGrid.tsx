@@ -25,6 +25,16 @@ export function SiteGrid() {
     }
   }, []);
 
+  /** 新增成功后直接插本地 state，不重新拉数据（避免 Edge Config 写后读延迟） */
+  const handleAdd = useCallback((newSite: Site) => {
+    setSites((prev) => [newSite, ...prev]);
+  }, []);
+
+  /** 删除成功后直接从本地 state 移除 */
+  const handleDelete = useCallback((id: string) => {
+    setSites((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
   useEffect(() => {
     fetchSites();
   }, [fetchSites]);
@@ -55,7 +65,7 @@ export function SiteGrid() {
     return (
       <div className="flex flex-col items-center gap-4 py-20">
         <p className="text-muted-foreground">没有找到匹配的网站</p>
-        <AddSiteDialog onAdded={fetchSites} />
+        <AddSiteDialog onAdded={handleAdd} />
       </div>
     );
   }
@@ -63,11 +73,11 @@ export function SiteGrid() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <AddSiteDialog onAdded={fetchSites} />
+        <AddSiteDialog onAdded={handleAdd} />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {filtered.map((site, i) => (
-          <SiteCard key={site.id} site={site} index={i} onDelete={fetchSites} />
+          <SiteCard key={site.id} site={site} index={i} onDelete={handleDelete} />
         ))}
       </div>
     </div>
