@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Site } from "@/types";
 
 interface AddSiteDialogProps {
@@ -20,6 +20,31 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
   const [tags, setTags] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // 倒计时每 1 秒减 1，到 0 自动清除
+  useEffect(() => {
+    if (cooldown <= 0) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+    timerRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [cooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +70,16 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
       const data = await res.json();
 
       if (!res.ok) {
+        // 429 速率限制 → 解析倒计时秒数，启动实时倒数
+        if (res.status === 429) {
+          const match = data.error?.match(/(\d+)\s*秒/);
+          const seconds = match ? parseInt(match[1], 10) : 0;
+          if (seconds > 0) {
+            setCooldown(seconds);
+            setError(data.error);
+            return;
+          }
+        }
         setError(data.error || "添加失败");
         return;
       }
@@ -54,6 +89,7 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
       setDescription("");
       setIcon("🌐");
       setTags("");
+      setCooldown(0);
       setOpen(false);
       onAdded(data);
     } catch {
@@ -141,7 +177,9 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
 
               {error && (
                 <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {error}
+                  {cooldown > 0
+                    ? `操作太频繁，请 ${cooldown} 秒后再试`
+                    : error}
                 </p>
               )}
 
@@ -150,12 +188,12 @@ export function AddSiteDialog({ onAdded }: AddSiteDialogProps) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setOpen(false)}
+                  onClick={() => { setOpen(false); setCooldown(0); }}
                 >
                   取消
                 </Button>
-                <Button type="submit" size="sm" disabled={loading}>
-                  {loading ? "添加中..." : "添加"}
+                <Button type="submit" size="sm" disabled={loading || cooldown > 0}>
+                  {loading ? "添加中..." : cooldown > 0 ? `请等待 ${cooldown}s` : "添加"}
                 </Button>
               </div>
             </form>

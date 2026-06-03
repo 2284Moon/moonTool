@@ -87,12 +87,12 @@ async function readUserSites(): Promise<Site[]> {
   const token = process.env.VERCEL_TOKEN;
   const edgeConfigId = getEdgeConfigId();
 
-  // 1. 优先 REST API — 实时数据
+  // 1. 优先 REST API — 实时数据（cache: no-store 防止 Next.js 缓存）
   if (token && edgeConfigId) {
     try {
       const res = await fetch(
         `${VERCEL_API}/v1/edge-config/${edgeConfigId}/items`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
       );
       if (res.ok) {
         const data = await res.json();
@@ -166,6 +166,7 @@ async function writeUserSites(
         body: JSON.stringify({
           items: [{ operation: "upsert", key: USER_SITES_KEY, value: sites }],
         }),
+        cache: "no-store",
       }
     );
 
