@@ -19,6 +19,7 @@
     "curlconverter": "^4.12.0",
     "dayjs": "^1.11.20",
     "diff": "^9.0.0",
+    "fflate": "^0.8.3",
     "framer-motion": "^12.40.0",
     "jsbarcode": "^3.12.3",
     "lucide-react": "^1.14.0",

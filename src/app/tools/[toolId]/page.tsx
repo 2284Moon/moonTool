@@ -34,6 +34,8 @@ const DiffChecker = dynamic(() => import("@/tools/diff-checker").then((m) => m.D
 const TimestampConverter = dynamic(() => import("@/tools/timestamp-converter").then((m) => m.TimestampConverter));
 const JwtDecoder = dynamic(() => import("@/tools/jwt-decoder").then((m) => m.JwtDecoder));
 const ApiHealthChecker = dynamic(() => import("@/tools/api-health-checker").then((m) => m.ApiHealthChecker));
+const FileArchiver = dynamic(() => import("@/tools/file-archiver").then((m) => m.FileArchiver));
+const SystemInfo = dynamic(() => import("@/tools/system-info/wrapper").then((m) => m.SystemInfoWrapper));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -130,6 +132,10 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <JwtDecoder />;
       case "api-health-checker":
         return <ApiHealthChecker />;
+      case "file-archiver":
+        return <FileArchiver />;
+      case "system-info":
+        return <SystemInfo />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">

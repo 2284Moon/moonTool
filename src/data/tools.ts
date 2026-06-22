@@ -169,4 +169,20 @@ export const tools: Tool[] = [
     tags: ["监控", "网络", "开发"],
     component: "api-health-checker",
   },
+  {
+    id: "file-archiver",
+    name: "文件打包解压",
+    description: "纯前端压缩和解压 ZIP 文件，支持拖拽上传，文件不离开浏览器",
+    icon: "📦",
+    tags: ["文件", "压缩", "工具"],
+    component: "file-archiver",
+  },
+  {
+    id: "system-info",
+    name: "系统信息检测",
+    description: "检测 IP 地址、浏览器、屏幕、硬件、网络速度等系统信息",
+    icon: "💻",
+    tags: ["系统", "网络", "检测"],
+    component: "system-info",
+  },
 ];
