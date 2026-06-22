@@ -10,17 +10,31 @@ const introText = "moonTool 提供各式各样的在线工具，以及精选的�
 
 export function HeroSection() {
   const [displayedText, setDisplayedText] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">("typing");
 
   useEffect(() => {
-    if (currentIndex < introText.length) {
-      const timer = setTimeout(() => {
-        setDisplayedText((prev) => prev + introText[currentIndex]);
-        setCurrentIndex((prev) => prev + 1);
-      }, 60);
+    if (phase === "typing") {
+      if (displayedText.length < introText.length) {
+        const timer = setTimeout(() => {
+          setDisplayedText(introText.slice(0, displayedText.length + 1));
+        }, 60);
+        return () => clearTimeout(timer);
+      }
+      const timer = setTimeout(() => setPhase("deleting"), 2000);
       return () => clearTimeout(timer);
     }
-  }, [currentIndex]);
+
+    if (phase === "deleting") {
+      if (displayedText.length > 0) {
+        const timer = setTimeout(() => {
+          setDisplayedText(displayedText.slice(0, -1));
+        }, 40);
+        return () => clearTimeout(timer);
+      }
+      const timer = setTimeout(() => setPhase("typing"), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [displayedText, phase]);
 
   return (
     <section className="flex flex-1 flex-col items-center justify-center px-4 py-20 text-center">

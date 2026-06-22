@@ -14,7 +14,7 @@ export function RemoveLineBreaks() {
   const output = useMemo(() => {
     if (!input) return "";
     if (mode === "remove") {
-      return input.replace(/[\r\n]+/g, " ");
+      return input.replace(/[\r\n]+/g, "");
     }
     return input.replace(/[\r\n]+/g, replacement);
   }, [input, mode, replacement]);
@@ -148,12 +148,14 @@ export function RemoveLineBreaks() {
       {input && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-4 py-2 text-xs">
           <span className="text-muted-foreground">
-            输入：<strong className="text-foreground">{input.length}</strong> 字符 ·{" "}
-            <strong className="text-foreground">{inputLineCount}</strong> 行
+            输入：<strong className="text-foreground">{input.length}</strong>{" "}
+            字符 · <strong className="text-foreground">{inputLineCount}</strong>{" "}
+            行
           </span>
           <span className="text-muted-foreground/40">|</span>
           <span className="text-muted-foreground">
-            输出：<strong className="text-foreground">{output.length}</strong> 字符 ·{" "}
+            输出：<strong className="text-foreground">{output.length}</strong>{" "}
+            字符 ·{" "}
             <strong className="text-foreground">{outputLineCount}</strong> 行
           </span>
           <span className="text-muted-foreground/40">|</span>

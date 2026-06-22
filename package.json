@@ -16,6 +16,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
+    "curlconverter": "^4.12.0",
     "dayjs": "^1.11.20",
     "diff": "^9.0.0",
     "framer-motion": "^12.40.0",
