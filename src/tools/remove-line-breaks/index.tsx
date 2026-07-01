@@ -4,17 +4,25 @@ import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, X, Eraser, Replace } from "lucide-react";
+import { Copy, X, Eraser, Replace, Minus } from "lucide-react";
 
 export function RemoveLineBreaks() {
   const [input, setInput] = useState("");
-  const [mode, setMode] = useState<"remove" | "replace">("remove");
+  const [mode, setMode] = useState<"remove" | "removeBlankLines" | "replace">(
+    "remove"
+  );
   const [replacement, setReplacement] = useState("");
 
   const output = useMemo(() => {
     if (!input) return "";
     if (mode === "remove") {
       return input.replace(/[\r\n]+/g, "");
+    }
+    if (mode === "removeBlankLines") {
+      return input
+        .split(/\r?\n/)
+        .filter((line) => line.trim() !== "")
+        .join("\n");
     }
     return input.replace(/[\r\n]+/g, replacement);
   }, [input, mode, replacement]);
@@ -48,6 +56,15 @@ export function RemoveLineBreaks() {
           >
             <Eraser className="h-3.5 w-3.5" />
             删除换行
+          </Button>
+          <Button
+            variant={mode === "removeBlankLines" ? "default" : "ghost"}
+            size="sm"
+            className="h-8 gap-1.5 px-3 text-xs"
+            onClick={() => setMode("removeBlankLines")}
+          >
+            <Minus className="h-3.5 w-3.5" />
+            删除空行
           </Button>
           <Button
             variant={mode === "replace" ? "default" : "ghost"}
@@ -107,6 +124,8 @@ export function RemoveLineBreaks() {
               <p className="text-xs text-muted-foreground">
                 {mode === "remove"
                   ? "所有换行符已被删除"
+                  : mode === "removeBlankLines"
+                    ? "空行已被删除，原有文本换行保留"
                   : `换行符已替换为"${replacement || "(空)"}"`}
               </p>
             </div>

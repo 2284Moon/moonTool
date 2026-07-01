@@ -44,7 +44,7 @@ export const tools: Tool[] = [
   {
     id: "remove-line-breaks",
     name: "删除换行",
-    description: "删除文本中的换行符，或将换行符替换为自定义字符",
+    description: "删除换行、删除空行，或将换行符替换为自定义字符",
     icon: "📝",
     tags: ["文本", "转换"],
     component: "remove-line-breaks",
