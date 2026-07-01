@@ -14,6 +14,9 @@ import {
 import { JsonLd } from "@/components/JsonLd";
 
 const JsonFormatter = dynamic(() => import("@/tools/json-formatter").then((m) => m.JsonFormatter));
+const DataConverter = dynamic(() => import("@/tools/data-converter").then((m) => m.DataConverter));
+const SqlFormatter = dynamic(() => import("@/tools/sql-formatter").then((m) => m.SqlFormatter));
+const BaseConverter = dynamic(() => import("@/tools/base-converter").then((m) => m.BaseConverter));
 const Base64Encoder = dynamic(() => import("@/tools/base64-encoder").then((m) => m.EncodingTools));
 const ColorPalette = dynamic(() => import("@/tools/color-palette").then((m) => m.ColorPalette));
 const CryptoTool = dynamic(() => import("@/tools/crypto-tool").then((m) => m.CryptoTool));
@@ -92,6 +95,12 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
     switch (toolId) {
       case "json-formatter":
         return <JsonFormatter />;
+      case "data-converter":
+        return <DataConverter />;
+      case "sql-formatter":
+        return <SqlFormatter />;
+      case "base-converter":
+        return <BaseConverter />;
       case "base64-encoder":
         return <Base64Encoder />;
       case "color-palette":
