@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Square,
   XCircle,
+  Zap,
 } from "lucide-react";
 import {
   Select,
@@ -27,6 +28,19 @@ interface HealthRecord {
   error?: string;
   response?: string;
   statusCode?: number;
+}
+
+interface StressSummary {
+  total: number;
+  success: number;
+  error: number;
+  successRate: string;
+  durationMs: number;
+  avgMs: number;
+  minMs: number;
+  maxMs: number;
+  p95Ms: number;
+  qps: string;
 }
 
 type ApiFormat = "openai" | "anthropic" | "gemini";
@@ -270,6 +284,22 @@ export function ApiHealthChecker() {
     useState<string>("等待粘贴配置或选择厂商");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [stressTotal, setStressTotal] = useState(20);
+  const [stressConcurrency, setStressConcurrency] = useState(5);
+  const [stressState, setStressState] = useState<"idle" | "running" | "done">(
+    "idle",
+  );
+  const [stressProgress, setStressProgress] = useState({
+    completed: 0,
+    success: 0,
+    error: 0,
+    total: 0,
+  });
+  const [stressSummary, setStressSummary] = useState<StressSummary | null>(
+    null,
+  );
+  const stressStopRef = useRef(false);
+
   const requestUrl = useMemo(
     () => normalizeUrl(url, format, model),
     [format, model, url],
@@ -434,6 +464,97 @@ export function ApiHealthChecker() {
   const resetRecords = () => {
     setRecords([]);
     setCurrentStatus("idle");
+  };
+
+  const startStressTest = () => {
+    if (!requestUrl.trim() || !model.trim() || isRunning) return;
+
+    const cfg = {
+      url: requestUrl,
+      apiKey,
+      model,
+      format,
+      authStyle,
+      prompt,
+      timeoutMs: timeoutSeconds * 1000,
+    };
+    const total = Math.min(500, Math.max(1, Math.round(stressTotal) || 1));
+    const workers = Math.min(
+      total,
+      Math.min(50, Math.max(1, Math.round(stressConcurrency) || 1)),
+    );
+
+    stressStopRef.current = false;
+    setStressSummary(null);
+    setStressProgress({ completed: 0, success: 0, error: 0, total });
+    setStressState("running");
+
+    const latencies: number[] = [];
+    let nextIndex = 0;
+    let success = 0;
+    let error = 0;
+    const startedAt = Date.now();
+
+    const runOne = async () => {
+      const requestStart = Date.now();
+      try {
+        const res = await fetch("/api/api-health-check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cfg),
+        });
+        const data = await res.json().catch(() => ({}));
+        latencies.push(Date.now() - requestStart);
+        if (res.ok && data.ok) success += 1;
+        else error += 1;
+      } catch {
+        latencies.push(Date.now() - requestStart);
+        error += 1;
+      }
+      setStressProgress({ completed: success + error, success, error, total });
+    };
+
+    const worker = async () => {
+      for (;;) {
+        if (stressStopRef.current) break;
+        if (nextIndex >= total) break;
+        nextIndex += 1;
+        await runOne();
+      }
+    };
+
+    void Promise.all(Array.from({ length: workers }, () => worker())).then(
+      () => {
+        const durationMs = Date.now() - startedAt;
+        const done = success + error;
+        const sorted = [...latencies].sort((a, b) => a - b);
+        const sum = sorted.reduce((acc, value) => acc + value, 0);
+        const p95Index = Math.min(
+          sorted.length - 1,
+          Math.floor(sorted.length * 0.95),
+        );
+        setStressSummary({
+          total: done,
+          success,
+          error,
+          successRate: done ? ((success / done) * 100).toFixed(1) : "0",
+          durationMs,
+          avgMs: done ? Math.round(sum / done) : 0,
+          minMs: sorted[0] ?? 0,
+          maxMs: sorted[sorted.length - 1] ?? 0,
+          p95Ms: sorted.length ? sorted[p95Index] : 0,
+          qps:
+            done && durationMs > 0
+              ? ((done / durationMs) * 1000).toFixed(2)
+              : "0",
+        });
+        setStressState("done");
+      },
+    );
+  };
+
+  const stopStressTest = () => {
+    stressStopRef.current = true;
   };
 
   const stats = useMemo(() => {
@@ -668,7 +789,11 @@ export function ApiHealthChecker() {
               {!isRunning ? (
                 <Button
                   onClick={startMonitoring}
-                  disabled={!requestUrl.trim() || !model.trim()}
+                  disabled={
+                    !requestUrl.trim() ||
+                    !model.trim() ||
+                    stressState === "running"
+                  }
                 >
                   <Play className="mr-2 h-4 w-4" /> 开始测试
                 </Button>
@@ -692,6 +817,156 @@ export function ApiHealthChecker() {
               </Button>
             </div>
           </div>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden border-2 py-0">
+        <div className="border-b bg-muted/50 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">并发压测</h2>
+              <p className="text-xs text-muted-foreground">
+                同时发出多个请求，测试中转站在高并发下是否扛得住
+              </p>
+            </div>
+            {stressState === "running" && (
+              <span className="text-xs font-medium text-amber-600">
+                压测进行中…
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="space-y-4 p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">总请求数</label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={stressTotal}
+                disabled={stressState === "running"}
+                onChange={(event) =>
+                  setStressTotal(
+                    Math.min(500, Math.max(1, Number(event.target.value) || 1)),
+                  )
+                }
+                className="w-28 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">并发数</label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={stressConcurrency}
+                disabled={stressState === "running"}
+                onChange={(event) =>
+                  setStressConcurrency(
+                    Math.min(50, Math.max(1, Number(event.target.value) || 1)),
+                  )
+                }
+                className="w-28 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="flex gap-2">
+              {stressState !== "running" ? (
+                <Button
+                  onClick={startStressTest}
+                  disabled={
+                    !requestUrl.trim() || !model.trim() || isRunning
+                  }
+                >
+                  <Zap className="mr-2 h-4 w-4" /> 开始压测
+                </Button>
+              ) : (
+                <Button variant="destructive" onClick={stopStressTest}>
+                  <Square className="mr-2 h-4 w-4" /> 停止
+                </Button>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              使用上方相同的 URL / Key / 模型 / 检测问题与超时设置
+            </div>
+          </div>
+
+          {stressState === "running" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  进度 {stressProgress.completed}/{stressProgress.total}
+                </span>
+                <span>
+                  成功{" "}
+                  <span className="text-green-600">
+                    {stressProgress.success}
+                  </span>{" "}
+                  · 失败{" "}
+                  <span className="text-red-600">{stressProgress.error}</span>
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{
+                    width: `${
+                      stressProgress.total
+                        ? (stressProgress.completed / stressProgress.total) *
+                          100
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {stressSummary && stressState === "done" && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                { label: "请求总数", value: String(stressSummary.total) },
+                {
+                  label: "成功",
+                  value: String(stressSummary.success),
+                  color: "text-green-600",
+                },
+                {
+                  label: "失败",
+                  value: String(stressSummary.error),
+                  color: "text-red-600",
+                },
+                {
+                  label: "成功率",
+                  value: `${stressSummary.successRate}%`,
+                  color:
+                    Number(stressSummary.successRate) >= 100
+                      ? "text-green-600"
+                      : "text-amber-600",
+                },
+                {
+                  label: "总耗时",
+                  value: `${(stressSummary.durationMs / 1000).toFixed(1)}s`,
+                },
+                { label: "QPS", value: stressSummary.qps },
+                { label: "平均延迟", value: `${stressSummary.avgMs}ms` },
+                { label: "P95 延迟", value: `${stressSummary.p95Ms}ms` },
+                { label: "最快", value: `${stressSummary.minMs}ms` },
+                { label: "最慢", value: `${stressSummary.maxMs}ms` },
+              ].map((item) => (
+                <div key={item.label} className="rounded-md border p-3">
+                  <div className="text-xs text-muted-foreground">
+                    {item.label}
+                  </div>
+                  <div
+                    className={`mt-1 truncate text-lg font-bold ${item.color || ""}`}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Card>
 
