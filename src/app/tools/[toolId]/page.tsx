@@ -39,6 +39,7 @@ const JwtDecoder = dynamic(() => import("@/tools/jwt-decoder").then((m) => m.Jwt
 const ApiHealthChecker = dynamic(() => import("@/tools/api-health-checker").then((m) => m.ApiHealthChecker));
 const FileArchiver = dynamic(() => import("@/tools/file-archiver").then((m) => m.FileArchiver));
 const SystemInfo = dynamic(() => import("@/tools/system-info/wrapper").then((m) => m.SystemInfoWrapper));
+const ColorOutfit = dynamic(() => import("@/tools/color-outfit").then((m) => m.ColorOutfit));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -145,6 +146,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <FileArchiver />;
       case "system-info":
         return <SystemInfo />;
+      case "color-outfit":
+        return <ColorOutfit />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">

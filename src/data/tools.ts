@@ -209,4 +209,12 @@ export const tools: Tool[] = [
     tags: ["系统", "网络", "检测"],
     component: "system-info",
   },
+  {
+    id: "color-outfit",
+    name: "配色推荐",
+    description: "Canvas 人物试色，调整帽子、上衣、裤子、鞋子配色，一键套用推荐方案",
+    icon: "👕",
+    tags: ["设计", "配色", "生成"],
+    component: "color-outfit",
+  },
 ];
