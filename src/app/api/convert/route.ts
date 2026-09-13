@@ -492,12 +492,52 @@ function toShadowrocket(proxies: ProxyNode[]): string {
 
 /* ─────────── 核心转换逻辑（GET 与 POST 共用） ─────────── */
 
-function convert(
+function looksLikeUrl(text: string): boolean {
+  const trimmed = text.trim();
+  return /^https?:\/\//.test(trimmed) && trimmed.split("\n").length === 1;
+}
+
+async function resolveSubscriptionContent(
+  text: string,
+  depth = 0,
+  maxDepth = 2
+): Promise<string> {
+  const decoded = decodeSubscription(text);
+
+  // 如果解码后是一个 URL，且未达到递归深度，尝试 fetch
+  if (depth < maxDepth && looksLikeUrl(decoded)) {
+    const url = decoded.trim();
+    try {
+      const resp = await fetchWithTimeout(
+        url,
+        {
+          headers: {
+            "User-Agent": "Shadowrocket/1982 CFNetwork/1335.0.3 Darwin/21.6.0",
+            Accept: "*/*",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            Referer: url,
+          },
+        },
+        10000
+      );
+      if (resp.ok) {
+        const innerText = await resp.text();
+        return resolveSubscriptionContent(innerText, depth + 1, maxDepth);
+      }
+    } catch {
+      // 嵌套 URL fetch 失败，返回已解码的内容（让外层诊断）
+    }
+  }
+
+  return decoded;
+}
+
+async function convert(
   originalText: string,
   target: string
-): { output: string; contentType: string } {
-  // 解码订阅内容
-  const decoded = decodeSubscription(originalText);
+): Promise<{ output: string; contentType: string }> {
+  // 解码订阅内容，支持嵌套 URL 自动解析
+  const decoded = await resolveSubscriptionContent(originalText);
 
   // 解析节点（优先尝试 YAML，回退到逐行 URI）
   let proxies: ProxyNode[] = [];
@@ -596,7 +636,7 @@ export async function GET(request: Request) {
           Referer: decodedUrl,
         },
       },
-      15000
+      10000
     );
 
     if (!resp.ok) {
@@ -616,7 +656,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { output, contentType } = convert(originalText, target);
+    const { output, contentType } = await convert(originalText, target);
     return new Response(output, {
       status: 200,
       headers: {
@@ -657,7 +697,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { output, contentType } = convert(content, target);
+    const { output, contentType } = await convert(content, target);
     return new Response(output, {
       status: 200,
       headers: {
