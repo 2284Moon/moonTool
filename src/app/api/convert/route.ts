@@ -564,7 +564,7 @@ async function convert(
   }
 
   // 生成输出
-  if (target === "shadowrocket") {
+  if (target === "shadowrocket" || target === "v2rayn") {
     return { output: toShadowrocket(proxies), contentType: "text/plain; charset=utf-8" };
   }
   return { output: toClashConfig(proxies), contentType: "text/yaml; charset=utf-8" };

@@ -19,7 +19,7 @@ import {
 import QRCode from "qrcode";
 
 type InputMode = "url" | "file" | "text";
-type TargetClient = "clash" | "shadowrocket";
+type TargetClient = "clash" | "shadowrocket" | "v2rayn";
 type OutputMode = "link" | "download" | "qrcode";
 
 interface TargetOption {
@@ -35,6 +35,12 @@ const TARGET_OPTIONS: TargetOption[] = [
     label: "Clash / Clash Verge / Mihomo",
     description: "输出标准 YAML 配置，包含 proxies、proxy-groups 和分流规则",
     ext: "yaml",
+  },
+  {
+    id: "v2rayn",
+    label: "v2rayN / v2rayNG / Nekoray",
+    description: "输出 Base64 编码的标准 URI 节点列表（vmess / vless / trojan / ss）",
+    ext: "txt",
   },
   {
     id: "shadowrocket",
@@ -217,10 +223,11 @@ export function SubscriptionConverter() {
     if (!result) return;
     const opt = TARGET_OPTIONS.find((o) => o.id === target)!;
     const blob = new Blob([result], { type: opt.id === "clash" ? "text/yaml;charset=utf-8" : "text/plain;charset=utf-8" });
+    const fileExt = opt.id === "v2rayn" ? "txt" : opt.ext;
     const urlObj = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = urlObj;
-    a.download = `subscription.${opt.ext}`;
+    a.download = `subscription.${fileExt}`;
     a.click();
     URL.revokeObjectURL(urlObj);
   };
