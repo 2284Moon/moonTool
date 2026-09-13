@@ -40,6 +40,7 @@ const ApiHealthChecker = dynamic(() => import("@/tools/api-health-checker").then
 const FileArchiver = dynamic(() => import("@/tools/file-archiver").then((m) => m.FileArchiver));
 const SystemInfo = dynamic(() => import("@/tools/system-info/wrapper").then((m) => m.SystemInfoWrapper));
 const ColorOutfit = dynamic(() => import("@/tools/color-outfit").then((m) => m.ColorOutfit));
+const SubscriptionConverter = dynamic(() => import("@/tools/subscription-converter").then((m) => m.SubscriptionConverter));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -148,6 +149,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <SystemInfo />;
       case "color-outfit":
         return <ColorOutfit />;
+      case "subscription-converter":
+        return <SubscriptionConverter />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">

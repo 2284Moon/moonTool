@@ -217,4 +217,12 @@ export const tools: Tool[] = [
     tags: ["设计", "配色", "生成"],
     component: "color-outfit",
   },
+  {
+    id: "subscription-converter",
+    name: "订阅转换",
+    description: "将代理订阅转换为 Clash YAML 或 Shadowrocket Base64 格式，支持 Trojan/VLESS/VMess/SS",
+    icon: "🌐",
+    tags: ["网络", "转换", "代理"],
+    component: "subscription-converter",
+  },
 ];
