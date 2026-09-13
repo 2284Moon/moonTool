@@ -535,7 +535,7 @@ async function resolveSubscriptionContent(
 async function convert(
   originalText: string,
   target: string
-): Promise<{ output: string; contentType: string }> {
+): Promise<{ output: string; contentType: string; nodesCount: number; protocols: string[] }> {
   // 解码订阅内容，支持嵌套 URL 自动解析
   const decoded = await resolveSubscriptionContent(originalText);
 
@@ -563,11 +563,14 @@ async function convert(
     throw new Error(diagMsg);
   }
 
+  // 统计协议类型
+  const protocols = Array.from(new Set(proxies.map((p) => p.type)));
+
   // 生成输出
   if (target === "shadowrocket" || target === "v2rayn") {
-    return { output: toShadowrocket(proxies), contentType: "text/plain; charset=utf-8" };
+    return { output: toShadowrocket(proxies), contentType: "text/plain; charset=utf-8", nodesCount: proxies.length, protocols };
   }
-  return { output: toClashConfig(proxies), contentType: "text/yaml; charset=utf-8" };
+  return { output: toClashConfig(proxies), contentType: "text/yaml; charset=utf-8", nodesCount: proxies.length, protocols };
 }
 
 /* ─────────── 带超时的 fetch ─────────── */
@@ -656,12 +659,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { output, contentType } = await convert(originalText, target);
+    const { output, contentType, nodesCount, protocols } = await convert(originalText, target);
     return new Response(output, {
       status: 200,
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        "X-Nodes-Count": String(nodesCount),
+        "X-Protocols": protocols.join(","),
       },
     });
   } catch (e) {
@@ -697,12 +702,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { output, contentType } = await convert(content, target);
+    const { output, contentType, nodesCount, protocols } = await convert(content, target);
     return new Response(output, {
       status: 200,
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        "X-Nodes-Count": String(nodesCount),
+        "X-Protocols": protocols.join(","),
       },
     });
   } catch (e) {

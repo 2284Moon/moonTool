@@ -81,6 +81,7 @@ export function SubscriptionConverter() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [nodesInfo, setNodesInfo] = useState<{ count: number; protocols: string[] } | null>(null);
 
   // 生成二维码
   useEffect(() => {
@@ -105,6 +106,7 @@ export function SubscriptionConverter() {
     setResult("");
     setApiUrl("");
     setQrDataUrl("");
+    setNodesInfo(null);
   }, []);
 
   // 文件上传处理
@@ -174,6 +176,9 @@ export function SubscriptionConverter() {
           setLoading(false);
           return;
         }
+        const count = parseInt(resp.headers.get("X-Nodes-Count") || "0", 10);
+        const protocols = resp.headers.get("X-Protocols")?.split(",").filter(Boolean) || [];
+        setNodesInfo({ count, protocols });
         setResult(text);
       } else {
         if (!value) {
@@ -198,6 +203,9 @@ export function SubscriptionConverter() {
           setLoading(false);
           return;
         }
+        const count = parseInt(resp.headers.get("X-Nodes-Count") || "0", 10);
+        const protocols = resp.headers.get("X-Protocols")?.split(",").filter(Boolean) || [];
+        setNodesInfo({ count, protocols });
         setResult(text);
       }
     } catch (e) {
@@ -410,7 +418,16 @@ export function SubscriptionConverter() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-muted-foreground">
-                  转换完成，共 {result.split("\n").length} 行
+                  {nodesInfo ? (
+                    <span>
+                      转换完成，共 <span className="font-semibold text-foreground">{nodesInfo.count}</span> 个节点
+                      {nodesInfo.protocols.length > 0 && (
+                        <span>（{nodesInfo.protocols.join(" / ")}）</span>
+                      )}
+                    </span>
+                  ) : (
+                    `转换完成，共 ${result.split("\n").length} 行`
+                  )}
                 </label>
                 <Button size="sm" variant="outline" onClick={download}>
                   <Download className="mr-1.5 h-3.5 w-3.5" />
