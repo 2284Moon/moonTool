@@ -48,13 +48,35 @@ function safeBase64Encode(text: string): string {
   return btoa(binary);
 }
 
-/* ─────────── 订阅内容解码 ─────────── */
+/* ─────────── 订阅内容解码（支持多层 base64） ─────────── */
 
 function decodeSubscription(text: string): string {
-  const trimmed = text.trim();
-  const decoded = safeBase64Decode(trimmed);
-  if (decoded) return decoded;
-  return trimmed;
+  let current = text.trim();
+  // 最多尝试解码 3 层 base64
+  for (let i = 0; i < 3; i++) {
+    const decoded = safeBase64Decode(current);
+    if (!decoded) break;
+    current = decoded;
+  }
+  return current;
+}
+
+/* ─────────── 内容诊断 ─────────── */
+
+function diagnoseContent(text: string): { protocols: string[]; preview: string; lineCount: number } {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  const protocols: string[] = [];
+  if (lines.some((l) => l.startsWith("vmess://"))) protocols.push("vmess");
+  if (lines.some((l) => l.startsWith("vless://"))) protocols.push("vless");
+  if (lines.some((l) => l.startsWith("trojan://"))) protocols.push("trojan");
+  if (lines.some((l) => l.startsWith("ss://"))) protocols.push("ss");
+  if (lines.some((l) => l.startsWith("ssr://"))) protocols.push("ssr");
+  if (lines.some((l) => l.startsWith("hysteria://"))) protocols.push("hysteria");
+  if (lines.some((l) => l.startsWith("tuic://"))) protocols.push("tuic");
+  if (text.includes("proxies:")) protocols.push("clash-yaml");
+
+  const preview = text.slice(0, 300).replace(/\s+/g, " ");
+  return { protocols, preview, lineCount: lines.length };
 }
 
 /* ─────────── QueryString 解析 ─────────── */
@@ -263,6 +285,53 @@ function parseSs(uri: string): ProxyNode | null {
   }
 }
 
+/* ─────────── SSR 协议解析（转为 Clash ss） ─────────── */
+
+function parseSsr(uri: string): ProxyNode | null {
+  try {
+    const b64 = uri.slice("ssr://".length);
+    const decoded = safeBase64Decode(b64);
+    if (!decoded) return null;
+
+    // 格式: server:port:protocol:method:obfs:password_base64/?params
+    const [mainPart, queryPart] = decoded.split("/?");
+    if (!mainPart) return null;
+
+    const parts = mainPart.split(":");
+    if (parts.length < 6) return null;
+
+    const server = parts[0];
+    const port = parseInt(parts[1], 10);
+    const method = parts[3];
+    const passwordB64 = parts[5];
+    const password = safeBase64Decode(passwordB64) || passwordB64;
+
+    let name = server;
+    if (queryPart) {
+      const qs = parseQueryString(queryPart);
+      if (qs.remarks) {
+        try {
+          name = safeBase64Decode(qs.remarks) || qs.remarks;
+        } catch {
+          name = qs.remarks;
+        }
+      }
+    }
+
+    return {
+      name,
+      type: "ss",
+      server,
+      port,
+      cipher: method,
+      password,
+      udp: true,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function parseUri(uri: string): ProxyNode | null {
   const trimmed = uri.trim();
   if (!trimmed) return null;
@@ -270,6 +339,7 @@ function parseUri(uri: string): ProxyNode | null {
   if (trimmed.startsWith("vless://")) return parseVless(trimmed);
   if (trimmed.startsWith("vmess://")) return parseVmess(trimmed);
   if (trimmed.startsWith("ss://")) return parseSs(trimmed);
+  if (trimmed.startsWith("ssr://")) return parseSsr(trimmed);
   return null;
 }
 
@@ -448,7 +518,9 @@ function convert(
   proxies = deduplicateNames(proxies);
 
   if (proxies.length === 0) {
-    throw new Error("No valid proxy nodes found in subscription");
+    const diag = diagnoseContent(decoded);
+    const diagMsg = `未找到有效节点。检测到协议: [${diag.protocols.join(", ") || "无"}], 共 ${diag.lineCount} 行, 内容预览: ${diag.preview}`;
+    throw new Error(diagMsg);
   }
 
   // 生成输出

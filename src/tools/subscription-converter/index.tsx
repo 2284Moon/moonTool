@@ -159,8 +159,12 @@ export function SubscriptionConverter() {
         const resp = await fetch(convertUrl);
         const text = await resp.text();
         if (!resp.ok) {
-          const data = JSON.parse(text);
-          setError(data.error || "转换失败");
+          try {
+            const data = JSON.parse(text);
+            setError(data.error || data.message || "转换失败");
+          } catch {
+            setError(text.slice(0, 200) || "转换失败");
+          }
           setLoading(false);
           return;
         }
@@ -179,8 +183,12 @@ export function SubscriptionConverter() {
         });
         const text = await resp.text();
         if (!resp.ok) {
-          const data = JSON.parse(text);
-          setError(data.error || "转换失败");
+          try {
+            const data = JSON.parse(text);
+            setError(data.error || data.message || "转换失败");
+          } catch {
+            setError(text.slice(0, 200) || "转换失败");
+          }
           setLoading(false);
           return;
         }
