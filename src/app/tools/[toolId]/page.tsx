@@ -47,6 +47,7 @@ interface ToolDetailPageProps {
 }
 
 export function generateStaticParams() {
+  if (process.env.NODE_ENV === "development") return [];
   return tools.map((tool) => ({ toolId: tool.id }));
 }
 

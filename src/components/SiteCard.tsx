@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Trash2 } from "lucide-react";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { getFaviconCandidates } from "@/util/favicon";
 import type { Site } from "@/types";
 
 function safeHostname(rawUrl: string): string {
@@ -25,6 +26,26 @@ interface SiteCardProps {
 export function SiteCard({ site, index = 0, onDelete }: SiteCardProps) {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const candidates = getFaviconCandidates(site.url, 64);
+  const favicon = candidates[attempt];
+  const showFavicon = candidates.length > 0 && attempt < candidates.length;
+
+  // 超时降级：某些图源（如被墙的 Google）请求会一直挂起而不触发 onError，
+  // 因此加一个计时器——指定时间内未加载成功就切换到下一个候选源。
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!showFavicon) return;
+    timerRef.current = setTimeout(() => setAttempt((a) => a + 1), 3000);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [attempt, showFavicon]);
+
+  const handleFaviconLoad = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
 
   const handleDelete = async (secretKey: string) => {
     const res = await fetch(`/api/sites?id=${site.id}`, {
@@ -46,7 +67,8 @@ export function SiteCard({ site, index = 0, onDelete }: SiteCardProps) {
         whileHover={{ y: -6, transition: { type: "spring", stiffness: 500, damping: 30 } }}
         className="group relative"
       >
-        {onDelete && (
+        {/* 仅用户添加的站点显示删除按钮；常驻站点不显示 */}
+        {onDelete && site.userAdded && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: deleting ? 0.5 : 1, scale: 1 }}
@@ -71,11 +93,25 @@ export function SiteCard({ site, index = 0, onDelete }: SiteCardProps) {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <motion.span
-                    className="text-xl"
+                    className="flex h-5 w-5 items-center justify-center overflow-hidden text-xl"
                     whileHover={{ rotate: [0, -15, 15, -10, 0] }}
                     transition={{ duration: 0.4 }}
                   >
-                    {site.icon}
+                    {showFavicon ? (
+                      <img
+                        src={favicon}
+                        alt={site.name}
+                        width={20}
+                        height={20}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        className="h-5 w-5 rounded-sm object-contain"
+                        onLoad={handleFaviconLoad}
+                        onError={() => setAttempt((a) => a + 1)}
+                      />
+                    ) : (
+                      <span>{site.icon}</span>
+                    )}
                   </motion.span>
                   <h3 className="text-base font-semibold leading-tight text-foreground">{site.name}</h3>
                 </div>

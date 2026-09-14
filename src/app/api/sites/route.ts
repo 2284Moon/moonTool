@@ -49,6 +49,7 @@ function normalizeSite(raw: Record<string, unknown>): Site {
     description: String(raw.description ?? ""),
     icon: String(raw.icon || "🌐"),
     tags: Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
+    userAdded: true,
   };
 }
 
@@ -274,6 +275,7 @@ export async function POST(request: Request) {
     description: description || "",
     icon: icon || "🌐",
     tags: tags || [],
+    userAdded: true,
   };
 
   const result = await writeUserSites([...userSites, newSite]);

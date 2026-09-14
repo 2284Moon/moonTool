@@ -15,7 +15,7 @@ import {
   Upload
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import Upscaler from "upscaler";
+import type Upscaler from "upscaler";
 
 // ====== 自定义裁剪器 ======
 
@@ -382,7 +382,7 @@ export function ImageTool() {
   const [contrast, setContrast] = useState(0);
 
   // --- AI 增强 ---
-  const [upscaler] = useState(() => new Upscaler());
+  const [upscaler, setUpcaler] = useState<Upscaler | null>(null);
   const [enhanceScale, setEnhanceScale] = useState(2);
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceProgress, setEnhanceProgress] = useState(0);
@@ -530,7 +530,13 @@ export function ImageTool() {
     setEnhanceProgress(0);
     setEnhancedUrl("");
     try {
-      const result = await (upscaler as unknown as { upscale: (input: HTMLCanvasElement, options: Record<string, unknown>) => Promise<unknown> }).upscale(editSource, {
+      let up = upscaler;
+      if (!up) {
+        const { default: UpscalerCtor } = await import("upscaler");
+        up = new UpscalerCtor();
+        setUpcaler(up);
+      }
+      const result = await (up as unknown as { upscale: (input: HTMLCanvasElement, options: Record<string, unknown>) => Promise<unknown> }).upscale(editSource, {
         output: "canvas",
         patchSize: 64,
         padding: 6,
