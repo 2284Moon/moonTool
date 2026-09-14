@@ -15,7 +15,7 @@ import {
   Upload
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type Upscaler from "upscaler";
+
 
 // ====== 自定义裁剪器 ======
 
@@ -382,7 +382,8 @@ export function ImageTool() {
   const [contrast, setContrast] = useState(0);
 
   // --- AI 增强 ---
-  const [upscaler, setUpcaler] = useState<Upscaler | null>(null);
+  type UpscalerInstance = InstanceType<typeof import("upscaler").default>;
+  const [upscaler, setUpcaler] = useState<UpscalerInstance | null>(null);
   const [enhanceScale, setEnhanceScale] = useState(2);
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceProgress, setEnhanceProgress] = useState(0);
