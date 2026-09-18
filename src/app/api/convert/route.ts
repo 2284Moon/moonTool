@@ -374,6 +374,13 @@ function deduplicateNames(proxies: ProxyNode[]): ProxyNode[] {
 function toClashConfig(proxies: ProxyNode[]): string {
   const proxyNames = proxies.map((p) => p.name);
 
+  // 组名统一用常量，避免定义处和 rules 引用处各写一份字面量而对不上
+  const GROUP_SELECT = "\uD83D\uDE80 \u8282\u70B9\u9009\u62E9";      // 🚀 节点选择
+  const GROUP_AUTO = "\u2668\uFE0F \u81EA\u52A8\u9009\u62E9";        // ♨️ 自动选择
+  const GROUP_DIRECT = "\uD83C\uDF0F \u76F4\u8FDE\u901A\u9053";      // 🌏 直连通道
+  const GROUP_BLOCK = "\uD83D\uDED1 \u62E6\u622A\u5E7F\u544A";       // 🛑 拦截广告
+  const GROUP_FINAL = GROUP_DIRECT;                                 // 兜底规则走的组
+
   const config = {
     "mixed-port": 7890,
     "allow-lan": false,
@@ -383,12 +390,12 @@ function toClashConfig(proxies: ProxyNode[]): string {
     proxies,
     "proxy-groups": [
       {
-        name: "\uD83D\uDE80 \u8282\u70B9\u9009\u62E9",
+        name: GROUP_SELECT,
         type: "select",
-        proxies: ["\u2668\uFE0F \u81EA\u52A8\u9009\u62E9", "\uD83C\uDF0F \u76F4\u8FDE\u901A\u9053", ...proxyNames],
+        proxies: [GROUP_AUTO, GROUP_DIRECT, ...proxyNames],
       },
       {
-        name: "\u2668\uFE0F \u81EA\u52A8\u9009\u62E9",
+        name: GROUP_AUTO,
         type: "url-test",
         url: "http://www.gstatic.com/generate_204",
         interval: 300,
@@ -396,26 +403,26 @@ function toClashConfig(proxies: ProxyNode[]): string {
         proxies: proxyNames,
       },
       {
-        name: "\uD83C\uDF0F \u76F4\u8FDE\u901A\u9053",
+        name: GROUP_DIRECT,
         type: "select",
-        proxies: ["DIRECT", "\uD83D\uDE80 \u8282\u70B9\u9009\u62E9"],
+        proxies: ["DIRECT", GROUP_SELECT],
       },
       {
-        name: "\uD83D\uDED1 \u62E6\u622A\u5E7F\u544A",
+        name: GROUP_BLOCK,
         type: "select",
         proxies: ["REJECT", "DIRECT"],
       },
     ],
     rules: [
-      "DOMAIN-SUFFIX,local,🎯 全球直连",
-      "IP-CIDR,127.0.0.0/8,🎯 全球直连",
-      "IP-CIDR,172.16.0.0/12,🎯 全球直连",
-      "IP-CIDR,192.168.0.0/16,🎯 全球直连",
-      "IP-CIDR,10.0.0.0/8,🎯 全球直连",
-      "IP-CIDR,100.64.0.0/10,🎯 全球直连",
-      "GEOIP,private,🎯 全球直连,no-resolve",
-      "GEOIP,CN,🎯 全球直连,no-resolve",
-      "MATCH,🚀 节点选择",
+      `DOMAIN-SUFFIX,local,${GROUP_FINAL}`,
+      `IP-CIDR,127.0.0.0/8,${GROUP_FINAL}`,
+      `IP-CIDR,172.16.0.0/12,${GROUP_FINAL}`,
+      `IP-CIDR,192.168.0.0/16,${GROUP_FINAL}`,
+      `IP-CIDR,10.0.0.0/8,${GROUP_FINAL}`,
+      `IP-CIDR,100.64.0.0/10,${GROUP_FINAL}`,
+      `GEOIP,private,${GROUP_FINAL},no-resolve`,
+      `GEOIP,CN,${GROUP_FINAL},no-resolve`,
+      `MATCH,${GROUP_SELECT}`,
     ],
   };
 
@@ -439,6 +446,10 @@ function toShadowrocket(proxies: ProxyNode[]): string {
             qs.set("host", (ws.headers as Record<string, string>).Host);
           }
         }
+        if (p.network === "grpc" && p["grpc-opts"]) {
+          const svc = (p["grpc-opts"] as Record<string, unknown>)["grpc-service-name"];
+          if (svc) qs.set("serviceName", String(svc));
+        }
         const query = qs.toString();
         uris.push(
           `trojan://${p.password}@${p.server}:${p.port}${query ? "?" + query : ""}#${encodeURIComponent(p.name)}`
@@ -456,6 +467,10 @@ function toShadowrocket(proxies: ProxyNode[]): string {
           if (ws.headers && (ws.headers as Record<string, string>).Host) {
             qs.set("host", (ws.headers as Record<string, string>).Host);
           }
+        }
+        if (p.network === "grpc" && p["grpc-opts"]) {
+          const svc = (p["grpc-opts"] as Record<string, unknown>)["grpc-service-name"];
+          if (svc) qs.set("serviceName", String(svc));
         }
         const query = qs.toString();
         uris.push(
