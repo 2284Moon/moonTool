@@ -41,6 +41,7 @@ const FileArchiver = dynamic(() => import("@/tools/file-archiver").then((m) => m
 const SystemInfo = dynamic(() => import("@/tools/system-info/wrapper").then((m) => m.SystemInfoWrapper));
 const ColorOutfit = dynamic(() => import("@/tools/color-outfit").then((m) => m.ColorOutfit));
 const SubscriptionConverter = dynamic(() => import("@/tools/subscription-converter").then((m) => m.SubscriptionConverter));
+const WorldClock = dynamic(() => import("@/tools/world-clock").then((m) => m.WorldClock));
 
 interface ToolDetailPageProps {
   params: Promise<{ toolId: string }>;
@@ -152,6 +153,8 @@ export default async function ToolDetailPage({ params }: ToolDetailPageProps) {
         return <ColorOutfit />;
       case "subscription-converter":
         return <SubscriptionConverter />;
+      case "world-clock":
+        return <WorldClock />;
       default:
         return (
           <div className="rounded-lg border bg-muted/50 p-12 text-center text-muted-foreground">

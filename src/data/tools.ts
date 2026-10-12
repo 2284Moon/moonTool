@@ -225,4 +225,12 @@ export const tools: Tool[] = [
     tags: ["网络", "转换", "代理"],
     component: "subscription-converter",
   },
+  {
+    id: "world-clock",
+    name: "世界时钟",
+    description: "直观查看全球代表性城市此刻的日期与时间，每秒实时刷新",
+    icon: "🌍",
+    tags: ["时间", "工具"],
+    component: "world-clock",
+  },
 ];
