@@ -77,7 +77,7 @@ export function JsonFormatter() {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {/* 左侧：输入区域 */}
-                <Card className="flex flex-col min-h-[500px] overflow-hidden border-2 border-dashed border-primary/30 bg-card py-0 transition-colors hover:border-primary/50">
+                <Card className="flex h-[calc(100vh-200px)] min-h-[500px] flex-col overflow-hidden border-2 border-dashed border-primary/30 bg-card py-0 transition-colors hover:border-primary/50">
                     <div className="border-b bg-muted/50 px-4 py-2">
                         <h2 className="text-sm font-semibold text-foreground">
                             📝 粘贴 JSON
@@ -118,7 +118,7 @@ export function JsonFormatter() {
                 </Card>
 
                 {/* 右侧：输出区域 */}
-                <Card className="flex flex-col min-h-[500px] overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
+                <Card className="flex h-[calc(100vh-200px)] min-h-[500px] flex-col overflow-hidden border-2 border-dashed border-green-500/30 bg-card py-0 transition-colors hover:border-green-500/50">
                     <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
                         <div>
                             <h2 className="text-sm font-semibold text-foreground">
